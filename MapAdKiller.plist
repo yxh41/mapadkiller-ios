@@ -1,0 +1,10 @@
+{
+  Filter = {
+    Bundles = (
+      "com.autonavi.amap",
+      "com.autonavi.minimap",
+      "com.baidu.BaiduMap",
+      "com.tencent.map"
+    );
+  };
+}
