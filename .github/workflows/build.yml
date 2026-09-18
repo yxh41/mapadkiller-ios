@@ -1,0 +1,137 @@
+name: Build MapAdKiller (roothide)
+
+# 在 GitHub macOS runner 上用 roothide 官方 theos 分支直接构建 roothide .deb：
+#   1) clone roothide/theos（内置 roothide package scheme）
+#   2) make package 直接产出 iphoneos-arm64e 的 roothide .deb（无需 patch.sh）
+# 沿用 yxh41/Oback 已验证的 CI 骨架：动态探测 theos/sdks 里最新的 iPhoneOS SDK，
+# 用 sed 改写 Makefile 的 TARGET，避免硬编码 SDK 版本缺失导致构建失败。
+#
+# 注意：roothide/theos 的 include/ 是空目录，社区也没有 Cephei 的 roothide fork，
+#       所以本工程不依赖 Cephei（偏好走编译期默认值）。别再往回加 HBPreferences。
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  THEOS: ${{ github.workspace }}/theos
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer 2>/dev/null || true
+
+      - name: Install dependencies
+        run: |
+          brew install dpkg ldid gnu-sed findutils coreutils xz
+          cpanm -n IO::Compress::Lzma 2>/dev/null || true
+
+      - name: Install Theos (roothide fork)
+        run: |
+          git clone --recursive https://github.com/roothide/theos.git "$THEOS"
+          for f in logos.pl dm.pl; do
+            [ -e "$THEOS/bin/$f" ] && continue
+            case "$f" in
+              logos.pl) curl -fsSL https://raw.githubusercontent.com/theos/logos/master/logos.pl -o "$THEOS/bin/logos.pl" ;;
+              dm.pl)    curl -fsSL https://raw.githubusercontent.com/theos/dm.pl/master/dm.pl    -o "$THEOS/bin/dm.pl" ;;
+            esac
+            chmod +x "$THEOS/bin/$f"
+          done
+
+      - name: Install SDKs
+        run: |
+          rm -rf "$THEOS/sdks"
+          git clone --depth=1 https://github.com/theos/sdks.git "$THEOS/sdks"
+          ls -1 "$THEOS/sdks/" | grep -i iphone
+
+      - name: Detect SDK version
+        run: |
+          SDK=$(ls "$THEOS/sdks/" | grep -o 'iPhoneOS[0-9.]*\.sdk' | sed 's/iPhoneOS//;s/\.sdk//' | sort -V | tail -1)
+          echo "Detected latest SDK: $SDK"
+          sed -i '' "s/TARGET := iphone:clang:.*/TARGET := iphone:clang:$SDK:15.0/" Makefile
+          echo "Makefile TARGET now:"
+          grep '^TARGET' Makefile
+
+      - name: Stamp build tag + version with git hash
+        run: |
+          HASH=$(git rev-parse --short=7 HEAD 2>/dev/null || echo dev)
+          echo "commit hash: $HASH"
+          # control: 0.0.1 -> 0.0.1+<hash>
+          sed -i '' "s|^Version:.*|Version: 0.0.1+$HASH|" control
+          echo "control Version -> $(grep '^Version:' control)"
+          # Tweak.xm: #define MAK_BUILD_TAG @"v1" -> @"v1+<hash>"（保留人工标签，追加 hash）
+          sed -i '' -E "s|^#define MAK_BUILD_TAG @\"([^\"+]*)(\+[^\"]*)?\"|#define MAK_BUILD_TAG @\"\1+$HASH\"|" Tweak.xm
+          echo "build tag -> $(grep '^#define MAK_BUILD_TAG' Tweak.xm)"
+          grep '^#define MAK_BUILD_TAG' Tweak.xm || { echo "::error::MAK_BUILD_TAG not found, couldn't stamp"; }
+
+      - name: Build roothide .deb
+        run: |
+          set -o pipefail
+          make clean
+          make package FINALPACKAGE=1 THEOS_ENV=silent 2>&1 | tee ci-build.log \
+            || make package FINALPACKAGE=1 2>&1 | tee ci-build.log
+          grep -iE "error:|undeclared identifier|No such file" ci-build.log | sed 's|^|::error::|' || true
+          echo "--- packages dir ---"
+          ls -la packages/ 2>/dev/null || true
+          ROOTHIDE_DEB=$(ls packages/*_iphoneos-arm64e.deb 2>/dev/null | head -n1)
+          if [ -z "$ROOTHIDE_DEB" ]; then
+            echo "::error::No iphoneos-arm64e .deb produced"
+            exit 1
+          fi
+          echo "ROOTHIDE_DEB=$ROOTHIDE_DEB" >> "$GITHUB_ENV"
+          dpkg-deb -I "$ROOTHIDE_DEB" | head -20
+          echo "::notice::package version = $(dpkg-deb -f "$ROOTHIDE_DEB" Version 2>/dev/null)"
+          echo "::notice::build tag = $(grep '^#define MAK_BUILD_TAG' Tweak.xm)"
+
+      - name: Upload build log (diagnostics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-build-log
+          path: ci-build.log
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Upload roothide .deb
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapadkiller-deb
+          path: packages/*_iphoneos-arm64e.deb
+          if-no-files-found: error
+          retention-days: 90
+
+      # 双通道取件：同时把 deb 推到 deb-artifacts 孤儿分支。
+      # 历史上用户 PAT 失效导致无法通过 REST API 下载 artifact，这条是兜底。
+      - name: Publish .deb via git (fallback)
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.email "ci@mapadkiller.local"
+          git config user.name "MapAdKiller CI"
+          SHA=$(git rev-parse --short=7 HEAD)
+          TMP=$(mktemp -d)
+          if [ -n "$ROOTHIDE_DEB" ] && [ -f "$ROOTHIDE_DEB" ]; then
+            cp "$ROOTHIDE_DEB" "$TMP/mapadkiller_${SHA}.deb"
+          fi
+          [ -f ci-build.log ] && cp ci-build.log "$TMP/ci-build.log"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/yxh41/mapadkiller-ios.git"
+          git fetch origin deb-artifacts 2>/dev/null || true
+          git checkout --orphan deb-artifacts
+          git reset --hard
+          git clean -fdx >/dev/null 2>&1 || true
+          mkdir -p out
+          cp "$TMP"/* out/ 2>/dev/null || true
+          git add out 2>/dev/null || true
+          git commit -m "build ${SHA} (deb=${ROOTHIDE_DEB:+1})" >/dev/null 2>&1 || echo "nothing to commit"
+          git push --force origin deb-artifacts 2>&1 | tail -3
