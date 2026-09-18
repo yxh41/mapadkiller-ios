@@ -1,0 +1,34 @@
+# MapAdKiller-iOS — Theos tweak (iOS 16, roothide, arm64/arm64e)
+# 复刻 yxh41/MapAdKiller (Android Xposed) 到 iOS 越狱环境。
+#
+# 构建说明：
+#   * 用 roothide 官方 theos 分支（roothide/theos）构建，它内置 roothide package
+#     scheme；make package 直接产出 iphoneos-arm64e 的 roothide .deb，无需 patch.sh。
+#     标准 theos/theos 没有 roothide scheme，不能用。
+#   * ARCHS 编 arm64 + arm64e：真机 App Store App 走 arm64e，arm64 用于兼容验证。
+#   * 不依赖 Cephei：roothide/theos 的 include/ 是空的，社区也没有 Cephei 的
+#     roothide fork，CI 里编不过。偏好开关目前走编译期默认值（见 Tweak.xm）。
+#   * -Werror：沿用其它 tweak 的 CI 约定；请勿引入废弃 UIKit 调用
+#     （UIApplication.keyWindow / windows / UI_USER_INTERFACE_IDIOM 一律不用）。
+
+#   * 暂不挂 -Wall：本地无编译环境，先用 -Werror 拿到干净构建再去收紧，
+#     避免 CI 反复往返。deprecation 警告默认开启，废弃 UIKit 仍会被拦下。
+
+TARGET := iphone:clang:16.5:15.0
+ARCHS := arm64 arm64e
+
+THEOS_PACKAGE_SCHEME := roothide
+PACKAGE_VERSION := 0.0.1
+
+include $(THEOS)/makefiles/common.mk
+
+TWEAK_NAME := MapAdKiller
+MapAdKiller_FILES := Tweak.xm
+MapAdKiller_FRAMEWORKS := UIKit Foundation
+MapAdKiller_CFLAGS := -fobjc-arc -Werror
+
+include $(THEOS_MAKE_PATH)/tweak.mk
+
+after-install::
+	@echo "MapAdKiller: installed. Respring, then reopen the target map app."
+	@killall -9 SpringBoard 2>/dev/null || true
