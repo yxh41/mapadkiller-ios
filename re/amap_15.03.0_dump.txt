@@ -1,0 +1,220 @@
+
+==============================================================================
+[main] Payload/AMapiPhone.app/AMapiPhone
+==============================================================================
+  架构=arm64  filetype=2  加载数据=23.9MB  cryptid=0 已砸壳 OK
+  BundleID=com.autonavi.amap  Version=15.03.0
+  ObjC 类总数: 11116
+  命中(类+广告方法): 18      命中类但无广告方法: 77
+  --- 可直接用于 installTargetedHooks 的类+方法 ---
+    AMAOSBannerListData                                # token=banner
+         bannerInfo
+         setBannerInfo:
+    AMAOSBannerRequest                                 # token=banner
+         setCoachPathResultPagePictureBannerOptionMD5:
+         setTrainPathResultPagePictureBannerOptionMD5:
+    LTMToolBoxPopupControllerV2A                       # token=popup
+         popupView
+         removePopupView
+         setPopupView:
+         showPopupViewWithItem:
+    SNPopupView                                        # token=popup
+         getAlphaAnimationForPopup
+         getPositionAnimationForPopup
+         isPopup
+         popup
+    WINADView                                          # token=UP:AD
+         adLabel
+         refreshADLabel:
+         setAdLabel:
+    WINSplashFullScreenSlideAndTapInteractionView      # token=splash
+         processRollSplashGuideWithProgress:
+    WINSplashRealtimeStatistic                         # token=splash
+         setSplashFinished:
+         splashFinished
+    WINSplashRollView                                  # token=splash
+         processRollSplashGuideWithProgress:
+    WINSplashSceneManager                              # token=splash
+         getSplashScene
+    WINSplashScreenAssetsDownloader                    # token=splash
+         downloadSplashScreenAssets:scene:completionBlock:
+    WINSplashScreenData                                # token=splash
+         ad
+         containsAliMotherAd
+         setAd:
+    WINSplashScreenDataPersistentWorker                # token=splash
+         asyncQuerySplashData:
+         querySplashData
+         setSplashData:
+         setSplashDataCache:
+         splashData
+    WINSplashScreenPresenter                           # token=splash
+         addSplashViewForResource:creative:sessionId:
+         presentRealTimeSplashScreen:scene:filteringSuccessBlock:filteringFailureBlock:playFinishBlock:animationFinishBlock:
+         presentSplashScreenWithData:scene:fromBackground:otherInfo:filteringSuccessBlock:filteringFailureBlock:playFinishBlock:animationFinishBlock:
+         setSplashView:
+         splashView
+    WINSplashScreenVAppService                         # token=splash
+         asyncHasLocalSplashDataInToday:
+         asyncIsLocalSplashDataCanExposure:
+         doFetchSplashDataAfterDelay:scene:isExposeScene:completionBlock:
+         fetchSplashDataAfterDelay:scene:isExposeScene:completionBlock:
+         fetchSplashDataWithScene:
+         hadShowSplashScreen
+         isLocalSplashDataCanExposure
+         saveSplashDataAndStartDownloadAssets:scene:completionBlock:
+    WINSplashShakePredictor                            # token=splash
+         setSplashShakeConfig:
+         splashShakeConfig
+         splashShakePredictFeature:triggerPoints:
+    WINSplashShakeUtil                                 # token=splash
+         isOpenSplashShakePredict
+         isSplashShakePredictReady
+         setIsOpenSplashShakePredict:
+         setIsSplashShakePredictReady:
+         setSplashShakePredictor:
+         splashShakePredictor
+         splashShakePredictor:initResult:
+         splashShakePredictor:predictResultSuccess:
+    WINSplashView                                      # token=splash
+         showSplashAccessories
+    WINTrainPicBannerView                              # token=banner
+         bannerView
+         setBannerView:
+  --- 只有类命中、未见广告方法（建议挂 viewDidAppear: 兜底）---
+    AJXFastSplashView                                  # token=splash
+    AJXLiteSplashView                                  # token=splash
+    AJXModuleSplashScreen                              # token=splash
+    AMapOverseasADManager                              # token=ad
+    AMapSplashShakePredictFeature                      # token=splash
+    APNumPwdPopupView                                  # token=popup
+    GDSplashCloudConfigViewControl                     # token=splash
+    GDSplashScreenDebugWindow                          # token=splash
+    GDSplashScreenQALog                                # token=splash
+    GDSplashTouchEventMonitor                          # token=splash
+    GDTBTControlAdapter                                # token=gdt
+    GDTTSResPlayTask                                   # token=gdt
+    LTMAJX3SplashView                                  # token=splash
+    LTMAOSBannerRequest                                # token=banner
+    LTMToolboxPopupItemV2A                             # token=popup
+    LTMToolboxPopupViewV2A                             # token=popup
+    LTMVUIEmojiPopupModel                              # token=popup
+    LTMVUIEmojiPopupTip                                # token=popup
+    LTMVUIEmojiPopupView                               # token=popup
+    NADOptions                                         # token=UP:AD
+    QQApiAdItem                                        # token=ad
+    SNPopupView_clickable                              # token=popup
+    SNPopupView_img                                    # token=popup
+    TABannerView                                       # token=banner
+    WINASATrackerADService                             # token=ad
+  --- 弱命中类名（人工确认后补进 CLASS_TOKENS）---
+     AFEWebGuideView
+     AJXModuleSceneRecommend
+     ALBBGuidePageHandler
+     AMAOSFeedBackErrorData
+     AMAOSFeedBackNavigationData
+     AMAOSFeedBackRequest
+     AMAOSFeedBackResponseData
+     AMAPHiddenControlGuideBgView
+     AMapGuideTipAction
+     AMapGuideTipContentView
+     AMapGuideTipView
+     AMapPoiRecommendModule
+     AMapPoiRecommendService
+     AMapRouteTypeRecommendAlgorithm
+     APBToygerGuideTask
+     APRemoteLoggingLaunchTask
+     AUFloatMenu
+     AUNoticeDialog
+     AUPopFloatView
+     AURecordFloatTip
+     AlibabaUccRecommendBindInfo
+     AmapCarDriveVUIGotoGuideTask
+     DTFloat
+     DTFloatMXXT
+     FloatPoint
+     GDAmapHomeOperatePosition
+     GDCloudConfigLaunchCache
+     GDFeatureGuideSchemeIntentInterceptor
+     GDFeedItem
+     GDLaunchConfigUtility
+
+==============================================================================
+可直接粘贴进 Tweak.xm 的 installTargetedHooks()
+==============================================================================
+
+// bundleID = com.autonavi.amap
+hooks = @[
+    @[@"AMAOSBannerListData", @"bannerInfo"],
+    @[@"AMAOSBannerListData", @"setBannerInfo:"],
+    @[@"AMAOSBannerRequest", @"setCoachPathResultPagePictureBannerOptionMD5:"],
+    @[@"AMAOSBannerRequest", @"setTrainPathResultPagePictureBannerOptionMD5:"],
+    @[@"LTMToolBoxPopupControllerV2A", @"popupView"],
+    @[@"LTMToolBoxPopupControllerV2A", @"removePopupView"],
+    @[@"LTMToolBoxPopupControllerV2A", @"setPopupView:"],
+    @[@"LTMToolBoxPopupControllerV2A", @"showPopupViewWithItem:"],
+    @[@"SNPopupView", @"getAlphaAnimationForPopup"],
+    @[@"SNPopupView", @"getPositionAnimationForPopup"],
+    @[@"SNPopupView", @"isPopup"],
+    @[@"SNPopupView", @"popup"],
+    @[@"WINADView", @"adLabel"],
+    @[@"WINADView", @"refreshADLabel:"],
+    @[@"WINADView", @"setAdLabel:"],
+    @[@"WINSplashFullScreenSlideAndTapInteractionView", @"processRollSplashGuideWithProgress:"],
+    @[@"WINSplashRealtimeStatistic", @"setSplashFinished:"],
+    @[@"WINSplashRealtimeStatistic", @"splashFinished"],
+    @[@"WINSplashRollView", @"processRollSplashGuideWithProgress:"],
+    @[@"WINSplashSceneManager", @"getSplashScene"],
+    @[@"WINSplashScreenAssetsDownloader", @"downloadSplashScreenAssets:scene:completionBlock:"],
+    @[@"WINSplashScreenData", @"ad"],
+    @[@"WINSplashScreenData", @"containsAliMotherAd"],
+    @[@"WINSplashScreenData", @"setAd:"],
+    @[@"WINSplashScreenDataPersistentWorker", @"asyncQuerySplashData:"],
+    @[@"WINSplashScreenDataPersistentWorker", @"querySplashData"],
+    @[@"WINSplashScreenDataPersistentWorker", @"setSplashData:"],
+    @[@"WINSplashScreenDataPersistentWorker", @"setSplashDataCache:"],
+    @[@"WINSplashScreenDataPersistentWorker", @"splashData"],
+    @[@"WINSplashScreenPresenter", @"addSplashViewForResource:creative:sessionId:"],
+    @[@"WINSplashScreenPresenter", @"presentRealTimeSplashScreen:scene:filteringSuccessBlock:filteringFailureBlock:playFinishBlock:animationFinishBlock:"],
+    @[@"WINSplashScreenPresenter", @"presentSplashScreenWithData:scene:fromBackground:otherInfo:filteringSuccessBlock:filteringFailureBlock:playFinishBlock:animationFinishBlock:"],
+    @[@"WINSplashScreenPresenter", @"setSplashView:"],
+    @[@"WINSplashScreenPresenter", @"splashView"],
+    @[@"WINSplashScreenVAppService", @"asyncHasLocalSplashDataInToday:"],
+    @[@"WINSplashScreenVAppService", @"asyncIsLocalSplashDataCanExposure:"],
+    @[@"WINSplashScreenVAppService", @"doFetchSplashDataAfterDelay:scene:isExposeScene:completionBlock:"],
+    @[@"WINSplashScreenVAppService", @"fetchSplashDataAfterDelay:scene:isExposeScene:completionBlock:"],
+    @[@"WINSplashScreenVAppService", @"fetchSplashDataWithScene:"],
+    @[@"WINSplashScreenVAppService", @"hadShowSplashScreen"],
+    @[@"WINSplashShakePredictor", @"setSplashShakeConfig:"],
+    @[@"WINSplashShakePredictor", @"splashShakeConfig"],
+    @[@"WINSplashShakePredictor", @"splashShakePredictFeature:triggerPoints:"],
+    @[@"WINSplashShakeUtil", @"isOpenSplashShakePredict"],
+    @[@"WINSplashShakeUtil", @"isSplashShakePredictReady"],
+    @[@"WINSplashShakeUtil", @"setIsOpenSplashShakePredict:"],
+    @[@"WINSplashShakeUtil", @"setIsSplashShakePredictReady:"],
+    @[@"WINSplashShakeUtil", @"setSplashShakePredictor:"],
+    @[@"WINSplashShakeUtil", @"splashShakePredictor"],
+    @[@"WINSplashView", @"showSplashAccessories"],
+    @[@"WINTrainPicBannerView", @"bannerView"],
+    @[@"WINTrainPicBannerView", @"setBannerView:"],
+    @[@"AJXFastSplashView", @"viewDidAppear:"],
+    @[@"AJXLiteSplashView", @"viewDidAppear:"],
+    @[@"AJXModuleSplashScreen", @"viewDidAppear:"],
+    @[@"AMapOverseasADManager", @"viewDidAppear:"],
+    @[@"AMapSplashShakePredictFeature", @"viewDidAppear:"],
+    @[@"APNumPwdPopupView", @"viewDidAppear:"],
+    @[@"GDSplashCloudConfigViewControl", @"viewDidAppear:"],
+    @[@"GDSplashScreenDebugWindow", @"viewDidAppear:"],
+    @[@"GDSplashScreenQALog", @"viewDidAppear:"],
+    @[@"GDSplashTouchEventMonitor", @"viewDidAppear:"],
+    @[@"GDTBTControlAdapter", @"viewDidAppear:"],
+    @[@"GDTTSResPlayTask", @"viewDidAppear:"],
+    @[@"LTMAJX3SplashView", @"viewDidAppear:"],
+    @[@"LTMAOSBannerRequest", @"viewDidAppear:"],
+    @[@"LTMToolboxPopupItemV2A", @"viewDidAppear:"],
+    @[@"LTMToolboxPopupViewV2A", @"viewDidAppear:"],
+    @[@"LTMVUIEmojiPopupModel", @"viewDidAppear:"],
+    @[@"LTMVUIEmojiPopupTip", @"viewDidAppear:"],
+    @[@"LTMVUIEmojiPopupView", @"viewDidAppear:"],
+    @[@"NADOptions", @"viewDidAppear:"],
+];
