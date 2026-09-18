@@ -1,0 +1,18 @@
+.theos/
+packages/
+theos/
+obj/
+ci-build.log
+*.deb
+
+# 临时/凭据脚本（用完即删，绝不能推上远端）
+re/_valid_token.txt
+re/_tok_src.txt
+re/_pick_tok.py
+re/_find_tok2.py
+re/_find_pat.py
+re/_gh.py
+re/_gh2.py
+re/_gh3.py
+re/_verify.py
+re/_push_mapadkiller.py
