@@ -18,7 +18,8 @@ TARGET := iphone:clang:16.5:15.0
 ARCHS := arm64 arm64e
 
 THEOS_PACKAGE_SCHEME := roothide
-PACKAGE_VERSION := 0.0.1
+# 不要在这里写 PACKAGE_VERSION —— 它会覆盖 control 的 Version，
+# 导致 CI 注入的 "0.0.1+<commit hash>" 失效。版本号以 control 为准。
 
 include $(THEOS)/makefiles/common.mk
 
