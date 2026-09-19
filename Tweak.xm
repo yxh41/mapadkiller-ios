@@ -63,7 +63,8 @@ static BOOL gEnabled    = YES;  // 总开关
 static BOOL gViewSweep  = YES;  // UIView 清扫层
 static BOOL gSdkBlock   = YES;  // 广告 SDK 自动拦截层
 static BOOL gAggressive = NO;   // 激进层：直接 no-op 开屏展示闸门
-static BOOL gDebugLog   = NO;   // 调试日志
+static BOOL gDebugLog   = NO;   // 调试日志（实时 syslog）
+static BOOL gFileLog    = NO;   // 文件日志（独立开关，写到文件里给 Filza 翻）
 static BOOL gAmap       = YES;
 static BOOL gBmap       = YES;
 static BOOL gTmap       = YES;
@@ -103,6 +104,7 @@ static void gPrefs_load(void) {
     gSdkBlock   = makBool(d, @"SdkBlock",   gSdkBlock);
     gAggressive = makBool(d, @"Aggressive", gAggressive);
     gDebugLog   = makBool(d, @"DebugLog",   gDebugLog);
+    gFileLog    = makBool(d, @"FileLog",    gFileLog);
     gAmap       = makBool(d, @"Amap",       gAmap);
     gBmap       = makBool(d, @"Bmap",       gBmap);
     gTmap       = makBool(d, @"Tmap",       gTmap);
@@ -111,13 +113,121 @@ static void gPrefs_load(void) {
     gUIPrefs    = d;
     makUIRecompute();
 }
+#pragma mark - 文件日志（独立开关 FileLog，默认关）
+//
+// 为什么要落文件：iOS 10+ 已经没有 /var/log/syslog，只剩统一日志（os_log）实时流，
+// 必须连电脑抓；本机若没装 iTunes / Apple 驱动就根本抓不到。落文件后手机上 Filza 直接翻，
+// 还能看历史 —— 排查「偏好链路通不通」「装错版本」这类要反复重启 App 的问题特别省事。
+//
+// ⚠️ 沙箱前提（关键，别写死路径）：dylib 注入在高德（App Store App）进程里，**继承它的沙箱**，
+//    /var/mobile/ 下的路径并不保证可写（上面 gPrefs_load 读同一片区域都标注了「多数读不到」）；
+//    roothide 还额外有 per-app 路径重定向。所以这里**依次探测多个候选**，
+//    最后兜底到 App 自己的容器 Documents（一定能写，只是路径带 UUID，Filza 里搜一下）。
+//
+// 三重约束：
+//   1) 默认关（独立开关 FileLog，不复用 DebugLog）
+//   2) 缓冲写：攒满 8 行、或距上次落盘超过 2 秒才写，绝不在 sweep 热路径里同步落盘
+//   3) 限大小：超过 256KB 就截断保留最后 192KB，避免放几天涨到几百 MB
+//   全路径都写不进 => 静默关闭文件日志，不影响任何去广告功能（fail-open）。
+
+static NSString *gLogPath = nil;                  // 实际生效的日志文件路径
+static NSMutableArray<NSString *> *gLogBuf = nil; // 写缓冲
+static NSTimeInterval gLogLast = 0.0;             // 上次落盘时间戳
+
+static BOOL makWritable(NSString *path) {
+    NSFileManager *fm = NSFileManager.defaultManager;
+    if ([fm fileExistsAtPath:path]) {
+        return ([NSFileHandle fileHandleForWritingAtPath:path] != nil);
+    }
+    NSString *dir = [path stringByDeletingLastPathComponent];
+    if (![fm fileExistsAtPath:dir]) {
+        [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:NULL];
+    }
+    return [@"" writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:NULL];
+}
+
+// 依次探测候选路径，返回第一个可写的；全失败返回 nil
+static NSString *makLogResolve(void) {
+    NSMutableArray<NSString *> *cands = [NSMutableArray arrayWithArray:@[
+        @"/var/mobile/Documents/MapAdKiller.log",
+        @"/var/jb/var/mobile/Documents/MapAdKiller.log",
+        @"/var/mobile/Library/Logs/MapAdKiller.log",
+    ]];
+    NSArray<NSString *> *docs = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    if (docs.count > 0U) {
+        [cands addObject:[docs.firstObject stringByAppendingPathComponent:@"MapAdKiller.log"]];
+    }
+    for (NSString *c in cands) {
+        if (makWritable(c)) return c;
+    }
+    return nil;
+}
+
+static void makLogFlush(void) {
+    if (!gFileLog || gLogPath.length == 0U || gLogBuf.count == 0U) return;
+    NSString *chunk = [gLogBuf componentsJoinedByString:@""];
+    [gLogBuf removeAllObjects];
+    @autoreleasepool {
+        NSFileHandle *h = [NSFileHandle fileHandleForWritingAtPath:gLogPath];
+        if (!h) return;
+        [h seekToEndOfFile];
+        [h writeData:[chunk dataUsingEncoding:NSUTF8StringEncoding]];
+        [h closeFile];
+        NSDictionary *attr = [NSFileManager.defaultManager attributesOfItemAtPath:gLogPath error:NULL];
+        unsigned long long sz = [[attr objectForKey:NSFileSize] unsignedLongLongValue];
+        if (sz > 256ULL * 1024ULL) {   // 限大小：只留最后 192KB
+            NSFileHandle *r = [NSFileHandle fileHandleForReadingAtPath:gLogPath];
+            if (r) {
+                [r seekToFileOffset:(unsigned long long)(sz - 192ULL * 1024ULL)];
+                NSData *tail = [r readDataToEndOfFile];
+                [r closeFile];
+                [tail writeToFile:gLogPath atomically:YES];
+            }
+        }
+    }
+}
+
+// 追加一行到缓冲（带时间戳）；按阈值落盘
+static void MAKWrite(NSString *msg) {
+    if (!gFileLog || msg.length == 0U) return;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        gLogPath = makLogResolve();
+        if (gLogPath.length > 0U) {
+            NSLog(@"[MapAdKiller] log file: %@", gLogPath);   // 明确告诉用户去哪看
+        } else {
+            NSLog(@"[MapAdKiller] log file: 无可用可写路径，文件日志已关闭");
+            gFileLog = NO;
+        }
+    });
+    if (gLogPath.length == 0U) return;
+    if (!gLogBuf) gLogBuf = [NSMutableArray array];
+    NSDate *now = [NSDate date];
+    NSTimeInterval t = [now timeIntervalSince1970];
+    [gLogBuf addObject:[NSString stringWithFormat:@"%@ %@\n", now.description, msg]];
+    if (gLogBuf.count >= 8U || (t - gLogLast) > 2.0) {
+        gLogLast = t;
+        makLogFlush();
+    }
+}
+
 static void MAKLog(NSString *fmt, ...) {
-    if (!gDebugLog) return;
+    va_list ap;
+    va_start(ap, fmt);
+    NSString *msg = [[NSString alloc] initWithFormat:fmt arguments:ap];
+    va_end(ap);
+    if (gDebugLog) NSLog(@"[MapAdKiller] %@", msg);
+    MAKWrite(msg);   // 文件日志与 DebugLog 独立：FileLog 开着就写，不要求同时开 DebugLog
+}
+
+// 无条件打印（同时进 syslog 与文件）
+static void MAKNote(NSString *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     NSString *msg = [[NSString alloc] initWithFormat:fmt arguments:ap];
     va_end(ap);
     NSLog(@"[MapAdKiller] %@", msg);
+    MAKWrite(msg);
 }
 
 #pragma mark - 广告类名 / selector 特征词（等价 Android AD_TOKENS / SDK_PREFIXES）
@@ -512,7 +622,7 @@ static void blockAdSDKs(void) {
         if (mcount > 0) hookedClasses++;
     }
     free(classes);
-    NSLog(@"[MapAdKiller] SDK block done: classes=%d methods=%d", hookedClasses, hookedMethods);
+    MAKNote(@"SDK block done: classes=%d methods=%d", hookedClasses, hookedMethods);
 }
 
 #pragma mark - Layer 3: 定点 hook
@@ -591,7 +701,7 @@ static void installTargetedHooks(NSString *bundleID) {
         hooks = amapSafeHooks();
         if (gAggressive) {
             hooks = [hooks arrayByAddingObjectsFromArray:amapAggressiveHooks()];
-            NSLog(@"[MapAdKiller] amap: 激进层已启用 (Aggressive=YES)");
+            MAKNote(@"amap: 激进层已启用 (Aggressive=YES)");
         }
     } else if ([bundleID isEqualToString:kTargetBmap]) {
         hooks = @[ /* 百度：待用 ipa_dump.py 解析其砸壳包后填充 */ ];
@@ -609,7 +719,7 @@ static void installTargetedHooks(NSString *bundleID) {
         noOpMethod(c, s);
         ok++;
     }
-    NSLog(@"[MapAdKiller] targeted hooks: ok=%d miss=%d (版本漂移会体现为 miss)", ok, miss);
+    MAKNote(@"targeted hooks: ok=%d miss=%d (版本漂移会体现为 miss)", ok, miss);
 }
 
 #pragma mark - Entry
@@ -622,18 +732,18 @@ static void installTargetedHooks(NSString *bundleID) {
                     [bid isEqualToString:kTargetBmap] ||
                     [bid isEqualToString:kTargetTmap];
     if (!gEnabled || !isTarget) {
-        NSLog(@"[MapAdKiller] skip (enabled=%d target=%@)", gEnabled, bid);
+        MAKNote(@"skip (enabled=%d target=%@)", gEnabled, bid);
         return;
     }
     // 仅对启用的目标 App 安装
     if ((bidIsAmap(bid) && !gAmap) ||
         ([bid isEqualToString:kTargetBmap] && !gBmap) ||
         ([bid isEqualToString:kTargetTmap] && !gTmap)) {
-        NSLog(@"[MapAdKiller] app disabled %@", bid);
+        MAKNote(@"app disabled %@", bid);
         return;
     }
 
-    NSLog(@"[MapAdKiller] loaded for %@ | build=%@ | enabled sweep=%d sdk=%d aggressive=%d",
+    MAKNote(@"loaded for %@ | build=%@ | enabled sweep=%d sdk=%d aggressive=%d",
           bid, MAK_BUILD_TAG, gViewSweep, gSdkBlock, gAggressive);
 
     // Layer 2：广告 SDK 自动拦截（进程内一次性）
@@ -655,4 +765,15 @@ static void installTargetedHooks(NSString *bundleID) {
                         sweepKeyWindow();
                     });
                 }];
+
+    // 文件日志：启动时先落一次盘（保证 loaded for / ui items 这类关键行立刻可见），
+    // 进后台时再落一次，避免缓冲里最后几行被丢掉。
+    if (gFileLog) {
+        [NSNotificationCenter.defaultCenter
+            addObserverForName:UIApplicationDidEnterBackgroundNotification
+                        object:nil
+                         queue:nil
+                    usingBlock:^(NSNotification *__unused note) { makLogFlush(); }];
+        makLogFlush();
+    }
 }

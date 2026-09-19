@@ -116,7 +116,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>隐藏底部标签。按tab文案精确匹配，默认全部显示；改动后强停高德重开生效。</string>
+			<string>隐藏底部标签。按 tab 文案精确匹配，默认全部显示；改动后强停高德重开生效。</string>
 			<key>label</key>
 			<string>高德 · 标签栏</string>
 		</dict>
@@ -522,7 +522,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>开启后在 syslog 打印清扫 / SDK 拦截明细（[MapAdKiller] VIEWKILL / SDK BLOCK / UI HIDE），定位用，日用建议关。</string>
+			<string>日志统一前缀 [MapAdKiller]。改完开关需强停目标 App 重开才生效（偏好只在注入那一刻读取）。</string>
 			<key>label</key>
 			<string>调试</string>
 		</dict>
@@ -533,10 +533,26 @@
 			<false/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>实时 syslog：打印清扫 / SDK 拦截 / 逐项隐藏明细。需连电脑抓（Console.app 或 pymobiledevice3）。</string>
 			<key>key</key>
 			<string>DebugLog</string>
 			<key>label</key>
 			<string>调试日志</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>把日志同时写到文件，手机上 Filza 直接翻，不用连电脑。实际路径会在 syslog 里打印（搜「log file:」）；候选顺序：/var/mobile/Documents → /var/jb/... → 兜底高德容器 Documents。单文件超过 256KB 自动截断。</string>
+			<key>key</key>
+			<string>FileLog</string>
+			<key>label</key>
+			<string>文件日志</string>
 		</dict>
 	</array>
 	<key>title</key>
