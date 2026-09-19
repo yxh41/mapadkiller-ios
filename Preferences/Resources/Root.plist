@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>高德 / 百度 / 腾讯地图 去开屏广告 + 首页 Banner + 广告 SDK 拦截（roothide / iOS 16）</string>
+			<key>label</key>
+			<string>MapAdKiller</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>总开关。关闭后完全不注入去广告逻辑。</string>
+			<key>key</key>
+			<string>Enabled</string>
+			<key>label</key>
+			<string>启用</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>UIView 树清扫层：按类名 / accessibilityLabel 隐藏移除广告视图。</string>
+			<key>key</key>
+			<string>ViewSweep</string>
+			<key>label</key>
+			<string>视图清扫</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>广告 SDK 运行时自动拦截层：枚举广告厂商类并 no-op 其展示方法。</string>
+			<key>key</key>
+			<string>SdkBlock</string>
+			<key>label</key>
+			<string>SDK 拦截</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>footnote</key>
+			<string>激进层：直接 no-op 开屏展示闸门。效果最狠，但有卡在启动页的风险，安全层不够时再开。</string>
+			<key>key</key>
+			<string>Aggressive</string>
+			<key>label</key>
+			<string>激进模式</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>按 App 单独启用 / 关闭。Bundle：高德 com.autonavi.amap、百度 com.baidu.BaiduMap、腾讯 com.tencent.map。</string>
+			<key>label</key>
+			<string>按 App 启用</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>Amap</string>
+			<key>label</key>
+			<string>高德地图</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>Bmap</string>
+			<key>label</key>
+			<string>百度地图</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>Tmap</string>
+			<key>label</key>
+			<string>腾讯地图</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>开启后在 syslog 打印清扫 / SDK 拦截明细（[MapAdKiller] VIEWKILL / SDK BLOCK），定位用，日用建议关。</string>
+			<key>label</key>
+			<string>调试</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>DebugLog</string>
+			<key>label</key>
+			<string>调试日志</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>MapAdKiller</string>
+</dict>
+</plist>
