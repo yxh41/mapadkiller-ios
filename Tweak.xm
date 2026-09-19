@@ -239,6 +239,24 @@ static void MAKNote(NSString *fmt, ...) {
 //      ACMUploadManager         -> 命中的是 ACMUplo|adManager
 //    反过来，containsString:@"SplashAd" 又把 WINSplash* 整条开屏链路漏光了。
 //    正确做法：先按驼峰拆成独立词段，再做整段匹配。
+//
+// ⚠️ 血泪教训 v2（真机日志 2026-09：868 条 SDK BLOCK / 107 个类，77 个是误伤）：
+//    只做「词段匹配」完全不够 —— 高德进程里同时装着系统私有框架，一批长得很像广告的
+//    系统类被一起 no-op，直接把蓝牙 / 隔空投送 / NFC / 实时路况弄坏：
+//      CBAdvertiser / CUBLEAdvertiser / CUBonjourAdvertiser / CUNFCAdvertiser
+//      PKProximityAdvertiser / SFBLEAdvertiser / TSBonjourAdvertise
+//        -> Advertising 在这里是「广播」不是「广告」（Continuity / Handoff / 隔空投送）
+//      GEOTrafficBannerText（56 个方法）      -> 实时路况横幅，不是广告
+//      ADClient / ADAttribution / ADCoreSettings / ADBannerView（iAd 框架）
+//      ASCAdLockupView / MHSchemaMHAdMatchingEnded（App Store 搜索广告 / Siri）
+//      AFSDK*（AppsFlyer 归因，不是广告展示）
+//      SF*/CK*/NM*/BN*/PX* 一堆 Banner / Popup（Safari / 信息 / 新闻 / 照片的 UI 横幅）
+//    根因：banner / advert / popup 是**多义词**，且进程里绝大多数类不来自 App 本体。
+//
+// 修复 = 三道闸门，全部通过才允许 no-op（见下方 makImageAllowed / adNameMatch）：
+//   1 来源：类必须由 App 本体 / App 自带 framework 加载（class_getImageName 判定）
+//   2 黑名单：命中广播语义词段（Advertiser / BLE / Bonjour / NFC / Proximity）直接放行
+//   3 强弱：强令牌单独命中即算；弱令牌需厂商词根或自家前缀背书
 
 static NSArray<NSString *> *makCamelSegs(NSString *name) {
     // AMapAdapterNaviOverlay -> ["A","Map","Adapter","Navi","Overlay"]
@@ -260,17 +278,34 @@ static NSArray<NSString *> *makCamelSegs(NSString *name) {
     return out;
 }
 
-static NSSet<NSString *> *makAdTokens(void) {
+// ---- 强令牌：单独命中即可判定为广告（语义唯一，不会是别的东西）----
+static NSSet<NSString *> *makStrongTokens(void) {
     static NSSet<NSString *> *s = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         s = [NSSet setWithArray:@[
-            @"ad", @"ads", @"advert", @"splash", @"banner", @"interstitial",
-            @"reward", @"promo", @"popup", @"popupad", @"nativead",
-            @"adview", @"adslot", @"adkit", @"admanager", @"adloader",
-            @"addata", @"admodel", @"adconfig", @"adservice", @"adrequest",
-            @"adresponse", @"adsdk", @"adx", @"adz", @"adunion", @"adprovider",
-            @"adbanner", @"adsplash", @"adresource", @"admaterial", @"adtrack"
+            @"ad", @"ads", @"adview", @"adslot", @"adkit", @"admanager",
+            @"adloader", @"addata", @"admodel", @"adconfig", @"adservice",
+            @"adrequest", @"adresponse", @"adsdk", @"adx", @"adz", @"adunion",
+            @"adprovider", @"adbanner", @"adsplash", @"adresource",
+            @"admaterial", @"adtrack", @"splashad", @"nativead", @"popupad",
+            @"interstitial", @"rewardvideo", @"rewarded"
+        ]];
+    });
+    return s;
+}
+
+// ---- 弱令牌：多义词，必须「同时」命中厂商词根或自家前缀才成立 ----
+//     banner / splash / popup / promo 在系统 UI 里遍地都是（Safari 横幅、通知横幅、
+//     路况条、弹窗管理器…），单独出现不能当作广告证据。
+static NSSet<NSString *> *makWeakTokens(void) {
+    static NSSet<NSString *> *s = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        s = [NSSet setWithArray:@[
+            @"banner", @"splash", @"popup", @"pop", @"promo", @"promotion",
+            @"reward", @"native", @"advert", @"advertise", @"advertising",
+            @"advertisement"
         ]];
     });
     return s;
@@ -285,17 +320,96 @@ static NSArray<NSString *> *makVendorStems(void) {
             @"gromore", @"anythink", @"sigmob", @"beizi", @"mintegral",
             @"inmobi", @"vungle", @"unityads", @"applovin", @"ironsource",
             @"admob", @"mopub", @"tanx", @"omsdk", @"pubnative", @"suyi",
-            @"taku", @"adscope", @"klevin", @"advertis", @"interstitial",
-            @"rewardvideo"
+            @"taku", @"adscope", @"klevin"
         ];
     });
     return s;
 }
 
-// 单个驼峰段是否本身是广告词（含厂商名 / 词根）
+// ---- 自家前缀：地图 App 自己的广告类命名前缀（弱令牌的「担保人」）----
+static NSArray<NSString *> *makOwnPrefixes(void) {
+    static NSArray<NSString *> *s = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        s = @[
+            @"win",         // 高德 WIN*：WINSplash* / WINADView / WINTrainPicBannerView
+            @"amaos",       // 高德 AMAOSBanner*
+            @"amap",        // 高德 AMap*
+            @"afcxbs",      // 高德 AFCXbsBanner
+            @"ltmtoolbox"   // 高德 LTMToolBoxPopup*
+        ];
+    });
+    return s;
+}
+
+// ---- 广播语义黑名单（词段级）：Advertising 在这里是「广播」不是「广告」----
+static NSSet<NSString *> *makDenySegs(void) {
+    static NSSet<NSString *> *s = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        s = [NSSet setWithArray:@[
+            @"advertiser", @"ble", @"bonjour", @"nfc", @"proximity",
+            @"bluetooth", @"handoff", @"continuity", @"airdrop", @"nearby",
+            @"beacon"
+        ]];
+    });
+    return s;
+}
+
+// ---- 整名子串黑名单（跨词段的固定词组）----
+static NSArray<NSString *> *makDenyWords(void) {
+    static NSArray<NSString *> *s = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        s = @[ @"geotraffic", @"afsdk", @"appsflyer" ];
+    });
+    return s;
+}
+
+#pragma mark - 闸门 1：类来源判定（只碰 App 本体自带的类）
+
+static NSString *makAppPathPrefix(void) {
+    static NSString *p = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSString *b = NSBundle.mainBundle.bundlePath;
+        if (b.length > 0U) p = [b copy];
+    });
+    return p;
+}
+
+// 类来自哪里？系统框架（dyld shared cache 里那一大批）一律放行不碰。
+static BOOL makImageAllowed(const char *img) {
+    if (img == NULL || img[0] == '\0') return NO;   // 来源不明 = 不碰
+    NSString *p = [NSString stringWithUTF8String:img];
+    if (p.length == 0U) return NO;                  // 非 UTF-8 路径 = 不碰
+    if ([p hasPrefix:@"/System/"] || [p hasPrefix:@"/usr/"] ||
+        [p hasPrefix:@"/AppleInternal/"] || [p hasPrefix:@"/Developer/"]) {
+        return NO;
+    }
+    NSString *app = makAppPathPrefix();
+    if (app.length > 0U) return [p hasPrefix:app];  // 必须是 App 本体 / 自带 framework
+    return YES;                                     // 拿不到 bundle 路径时，至少已排除系统库
+}
+
+static BOOL makClassAllowed(Class c) {
+    if (c == Nil) return NO;
+    return makImageAllowed(class_getImageName(c));
+}
+
+static BOOL makViewAllowed(UIView *v) {
+    if (v == nil) return NO;
+    if (makClassAllowed([v class])) return YES;
+    return makClassAllowed(object_getClass(v));   // KVO 动态子类兜底
+}
+
+// 单个驼峰段是否本身是广告词
+// ⚠️ 只在「类已被判定为广告类」之后用于 selector 匹配；弱令牌在这里可以单独成立，
+//    因为上下文已经是 WINSplash*/AMAOSBanner* 这类明确的广告类了。
 static BOOL segIsAdToken(NSString *seg) {
     NSString *low = seg.lowercaseString;
-    if ([makAdTokens() containsObject:low]) return YES;
+    if ([makStrongTokens() containsObject:low]) return YES;
+    if ([makWeakTokens() containsObject:low]) return YES;
     for (NSString *v in makVendorStems()) {
         if ([low isEqualToString:v]) return YES;
         if ([low hasPrefix:v] && (low.length - v.length) <= 6U) return YES;
@@ -315,9 +429,33 @@ static BOOL adNameMatch(NSString *name) {
         [nm hasPrefix:@"CF"] || [nm hasPrefix:@"SK"] || [nm hasPrefix:@"PH"]) {
         return NO;
     }
+    NSString *low = nm.lowercaseString;
+    for (NSString *d in makDenyWords()) {
+        if ([low rangeOfString:d].location != NSNotFound) return NO;
+    }
     NSArray<NSString *> *segs = makCamelSegs(nm);
+    // 广播语义黑名单优先：命中直接放行（蓝牙 / 隔空投送 / NFC / 附近设备）
     for (NSString *sg in segs) {
-        if (segIsAdToken(sg)) return YES;
+        if ([makDenySegs() containsObject:sg.lowercaseString]) return NO;
+    }
+    BOOL vendorHit = NO;
+    for (NSString *sg in segs) {
+        NSString *l = sg.lowercaseString;
+        for (NSString *v in makVendorStems()) {
+            if ([l isEqualToString:v] || ([l hasPrefix:v] && (l.length - v.length) <= 6U)) {
+                vendorHit = YES;
+                break;
+            }
+        }
+        if (vendorHit) break;
+    }
+    BOOL ownHit = NO;
+    for (NSString *p in makOwnPrefixes()) {
+        if ([low hasPrefix:p]) { ownHit = YES; break; }
+    }
+    // 强令牌：单独命中即成立
+    for (NSString *sg in segs) {
+        if ([makStrongTokens() containsObject:sg.lowercaseString]) return YES;
     }
     // 全大写粘连段收尾：WINAD -> AD（WINADView / WINADTracker 这类老命名）
     for (NSString *sg in segs) {
@@ -330,6 +468,12 @@ static BOOL adNameMatch(NSString *name) {
         if (!allUpper) continue;
         for (NSString *suf in @[ @"AD", @"ADS", @"SPLASH", @"BANNER", @"POP", @"PROMO" ]) {
             if ([sg hasSuffix:suf] && sg.length > suf.length) return YES;
+        }
+    }
+    // 弱令牌：需要厂商词根或自家前缀背书
+    if (vendorHit || ownHit) {
+        for (NSString *sg in segs) {
+            if ([makWeakTokens() containsObject:sg.lowercaseString]) return YES;
         }
     }
     return NO;
@@ -374,7 +518,7 @@ static void sweepView(UIView *view) {
         sweepView(v); // 先递归子树
         NSString *cls = NSStringFromClass(v.class);
         BOOL hit = NO;
-        if (adNameMatch(cls)) hit = YES;
+        if (adNameMatch(cls) && makViewAllowed(v)) hit = YES;   // 只藏 App 自带的广告视图
         if (!hit) {
             NSString *label = v.accessibilityLabel;
             if (label.length > 0U && label.length <= 6U) {
@@ -577,15 +721,81 @@ static void sweepUIItems(UIView *root) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// 文案嗅探（DebugLog 打开时才跑）
+//
+// 真机日志显示：5 个已关闭项的锚点一个都没命中（0 条 UI HIDE / UI SKIP），
+// 说明高德首页大概率是 AJX 自绘，原生 UILabel 树里根本没有"驾车"/"更多工具"这类文案。
+// 与其盲猜，不如让 tweak 自己把视图树里出现过的短文案抄进日志 —— 用户开一次 DebugLog、
+// 翻一遍页面，我们就能拿到真机真实文案，直接拿来填 makUIAnchors 的空锚点。
+// 等价于 Android 端用 Frida/flex 抓树，但零依赖、跨进程日志就能拿到。
+//
+// 去重：每条文案 / 每个类名只记一次，不会刷屏。
+// ---------------------------------------------------------------------------
+static void makSniff(UIView *root, NSString *where) {
+    if (!gDebugLog || root == nil) return;
+    if (!bidIsAmap(NSBundle.mainBundle.bundleIdentifier)) return;
+
+    static NSMutableSet<NSString *> *seenText  = nil;
+    static NSMutableSet<NSString *> *seenClass = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        seenText  = [NSMutableSet set];
+        seenClass = [NSMutableSet set];
+    });
+
+    NSMutableArray<NSString *> *texts  = [NSMutableArray array];
+    NSMutableArray<NSString *> *clsSet = [NSMutableArray array];
+    NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
+    NSUInteger guard = 0U;
+    while (stack.count > 0U && guard++ < 3000U) {
+        UIView *v = stack.lastObject;
+        [stack removeLastObject];
+
+        NSString *cn = NSStringFromClass(v.class);
+        if (cn.length > 0U && ![seenClass containsObject:cn]) {
+            [seenClass addObject:cn];
+            if (clsSet.count < 40U) [clsSet addObject:cn];
+        }
+
+        NSString *t = nil;
+        if ([v isKindOfClass:[UILabel class]]) {
+            t = ((UILabel *)v).text;
+        } else if ([v isKindOfClass:[UIButton class]]) {
+            t = [((UIButton *)v) titleForState:UIControlStateNormal];
+        }
+        if (t.length == 0U) t = v.accessibilityLabel;
+        if (t.length > 0U && t.length <= 16U) {
+            NSString *s = [t stringByTrimmingCharactersInSet:
+                           NSCharacterSet.whitespaceAndNewlineCharacterSet];
+            if (s.length > 0U && ![seenText containsObject:s]) {
+                [seenText addObject:s];
+                if (texts.count < 60U) [texts addObject:s];
+            }
+        }
+        for (UIView *sv in v.subviews) [stack addObject:sv];
+    }
+    if (clsSet.count > 0U) {
+        MAKLog(@"UI CLS %@ (%lu): %@", where, (unsigned long)clsSet.count,
+               [clsSet componentsJoinedByString:@" | "]);
+    }
+    if (texts.count > 0U) {
+        MAKLog(@"UI TXT %@ (%lu): %@", where, (unsigned long)texts.count,
+               [texts componentsJoinedByString:@" | "]);
+    }
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     UIViewController *vc = self;
+    NSString *where = NSStringFromClass(vc.class);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         if (!vc.view) return;
-        sweepUIItems(vc.view);      // Layer 4 逐项去留：独立于 ViewSweep 开关
-        if (!gViewSweep) return;    // Layer 1 清扫层：受 ViewSweep 控制
+        makSniff(vc.view, where);           // 文案/类名嗅探（仅 DebugLog）
+        sweepUIItems(vc.view);              // Layer 4 逐项去留：独立于 ViewSweep 开关
+        if (!gViewSweep) return;            // Layer 1 清扫层：受 ViewSweep 控制
         sweepView(vc.view);
     });
 }
@@ -602,10 +812,19 @@ static void blockAdSDKs(void) {
     int got = objc_getClassList(classes, count);
     int hookedClasses = 0;
     int hookedMethods = 0;
+    int skippedSystem = 0;
+    NSString *appPrefix = makAppPathPrefix();
+    MAKLog(@"SDK block scan: classes=%d appPath=%@", got, appPrefix ?: @"(nil)");
     for (int i = 0; i < got; i++) {
         Class c = classes[i];
         NSString *cname = NSStringFromClass(c);
         if (!adNameMatch(cname)) continue;
+        if (!makClassAllowed(c)) {                 // 闸门 1：系统框架类一律放行
+            skippedSystem++;
+            MAKLog(@"SDK SKIP(sys) %@ img=%s", cname,
+                   class_getImageName(c) ?: "(null)");
+            continue;
+        }
         unsigned int mcount = 0;
         Method *methods = class_copyMethodList(c, &mcount);
         if (!methods) continue;
@@ -622,7 +841,8 @@ static void blockAdSDKs(void) {
         if (mcount > 0) hookedClasses++;
     }
     free(classes);
-    MAKNote(@"SDK block done: classes=%d methods=%d", hookedClasses, hookedMethods);
+    MAKNote(@"SDK block done: classes=%d methods=%d skippedSystem=%d",
+            hookedClasses, hookedMethods, skippedSystem);
 }
 
 #pragma mark - Layer 3: 定点 hook
