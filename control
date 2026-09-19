@@ -6,4 +6,4 @@ Description: 高德/百度/腾讯地图 去开屏广告 + 首页banner + 广告S
 Maintainer: yxh41
 Author: yxh41
 Section: Tweaks
-Depends: mobilesubstrate, firmware (>= 16.0)
+Depends: mobilesubstrate, preferenceloader, firmware (>= 16.0)
