@@ -368,6 +368,20 @@
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
+			<string>ui_tool_express</string>
+			<key>label</key>
+			<string>秒送</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>首页条目由服务端下发，会轮换（上一版日志还是「实时公交」，这一版已变成「秒送」）。想要一劳永逸请改用下面「整块容器」里的「首页工具宫格」。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
 			<string>ui_tool_more</string>
 			<key>label</key>
 			<string>更多工具</string>
@@ -463,6 +477,80 @@
 			<string>我的位置</string>
 			<key>default</key>
 			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>高德 · 整块容器（按类名，抗文案变更）</string>
+			<key>footerText</key>
+			<string>这一组按容器类名整块隐藏，不受服务端轮换词条影响。类名取自真机 UI CLS 行，比文案锚点稳定得多。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_toolbox</string>
+			<key>label</key>
+			<string>首页工具宫格</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>隐藏 GDLiteToolBoxView 整块：不对每个格子逐个猜文案，服务端塞什么新词条都不怕。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_home_company</string>
+			<key>label</key>
+			<string>家 / 公司快捷条</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_searchbar</string>
+			<key>label</key>
+			<string>首页搜索栏</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_map_widget</string>
+			<key>label</key>
+			<string>地图浮层小组件</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>隐藏 MapWidgetContainerView：路线 / 更多 / 图层 / 我的位置 那一片浮层。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_tabbar</string>
+			<key>label</key>
+			<string>底部标签栏</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>隐藏 WINTabBar 整条 —— 注意这会让底部导航全部消失，只在需要极简界面时开。</string>
 		</dict>
 		<dict>
 			<key>cell</key>

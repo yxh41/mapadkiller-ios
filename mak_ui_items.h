@@ -1,6 +1,6 @@
 // 自动生成文件 —— 由 re/gen_ui.py 生成，请勿手改。
 // 数据源同 Preferences/Resources/Root.plist：同一份 SPEC 表两个产物，避免漂移。
-// 锚点来自真机日志 UI TXT（高德 iOS 15.x 原生视图树短文案）。
+// 锚点来自真机日志 UI TXT / UI CLS（高德 iOS 15.x 原生视图树）。
 #ifndef MAK_UI_ITEMS
 #define MAK_UI_ITEMS \
     @{    @"ui_tab_home": @[@"首页"],\
@@ -21,6 +21,7 @@
     @"ui_tool_scanstreet": @[@"高德扫街"],\
     @"ui_tool_daijia": @[@"代驾"],\
     @"ui_tool_gas": @[@"优惠加油"],\
+    @"ui_tool_express": @[@"秒送"],\
     @"ui_tool_more": @[@"更多工具"],\
     @"ui_tool_extra_page": @[@"景点游玩", @"离线地图", @"通行费助手", @"收藏夹", @"旅游度假"],\
     @"ui_home_shortcut": @[@"回家", @"去单位", @"去设置"],\
@@ -43,4 +44,13 @@
     @"ui_feed_ai": @[],\
     @"ui_feed_filter": @[],\
     @"ui_home_chips": @[]}
+#endif
+
+#ifndef MAK_UI_CLASS_ITEMS
+#define MAK_UI_CLASS_ITEMS \
+    @{    @"uic_toolbox": @[@"GDLiteToolBoxView"],\
+    @"uic_home_company": @[@"GDLiteHomeCompanyView"],\
+    @"uic_searchbar": @[@"WINQuickSearchBarV2"],\
+    @"uic_map_widget": @[@"MapWidgetContainerView"],\
+    @"uic_tabbar": @[@"WINTabBar"]}
 #endif

@@ -74,6 +74,7 @@ static BOOL gTmap       = YES;
 // Layer 4「逐项 UI 去留」用的状态（详见下方 makUIAnchors 注释）
 static NSDictionary *gUIPrefs = nil;                  // 全局 plist 里 ui_* 键值（全量保留）
 static NSSet<NSString *> *gUIHiddenAnchors = nil;     // 当前被关闭项的「中文文案锚点」集合
+static NSSet<NSString *> *gUIHiddenClasses = nil;     // 当前被关闭项的「容器类名锚点」集合
 static void makUIRecompute(void);                     // 前向声明（定义在 Layer 4 区段）
 
 static BOOL makBool(NSDictionary *dict, NSString *key, BOOL fallback) {
@@ -605,6 +606,16 @@ static NSDictionary<NSString *, NSArray<NSString *> *> *makUIAnchors(void) {
     return m;
 }
 
+// 类名锚点（uic_*）：整块容器一起隐藏。注释见 re/gen_ui.py 顶部的说明。
+static NSDictionary<NSString *, NSArray<NSString *> *> *makUIClassAnchors(void) {
+    static NSDictionary<NSString *, NSArray<NSString *> *> *m = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        m = MAK_UI_CLASS_ITEMS;
+    });
+    return m;
+}
+
 // 只有用户显式关掉（NO / 0 / false）才算隐藏；没配过 = 显示
 static BOOL makUIVisible(NSString *key) {
     id v = [gUIPrefs objectForKey:key];
@@ -617,18 +628,27 @@ static BOOL makUIVisible(NSString *key) {
     return YES;
 }
 
-// 偏好变化后重算「要隐藏的文案集合」。没有任何项关闭 => 空集 => 清扫时直接早退，零开销。
+// 偏好变化后重算「要隐藏的文案集合 / 类名集合」。两个都空 => 清扫时直接早退，零开销。
 static void makUIRecompute(void) {
     NSMutableSet<NSString *> *hid = [NSMutableSet set];
-    [makUIAnchors() enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSArray<NSString *> *anchors, __unused BOOL *stop) {
-        if (anchors.count == 0U) return;   // 锚点未校准 -> 不参与
-        if (makUIVisible(key)) return;     // 用户没关   -> 保持显示
-        for (NSString *a in anchors) {
-            if (a.length > 0U) [hid addObject:a];
-        }
-    }];
+    NSMutableSet<NSString *> *cls = [NSMutableSet set];
+    void (^collect)(NSDictionary *, NSMutableSet *) =
+        ^(NSDictionary<NSString *, NSArray<NSString *> *> *table, NSMutableSet<NSString *> *into) {
+        [table enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSArray<NSString *> *anchors,
+                                                   __unused BOOL *stop) {
+            if (anchors.count == 0U) return;   // 锚点未校准 -> 不参与
+            if (makUIVisible(key)) return;     // 用户没关   -> 保持显示
+            for (NSString *a in anchors) {
+                if (a.length > 0U) [into addObject:a];
+            }
+        }];
+    };
+    collect(makUIAnchors(), hid);
+    collect(makUIClassAnchors(), cls);
     gUIHiddenAnchors = (hid.count > 0U) ? [hid copy] : nil;
-    MAKLog(@"ui items: hidden anchors=%lu", (unsigned long)hid.count);
+    gUIHiddenClasses = (cls.count > 0U) ? [cls copy] : nil;
+    MAKLog(@"ui items: hidden anchors=%lu classes=%lu",
+           (unsigned long)hid.count, (unsigned long)cls.count);
 }
 
 // 命中判定：只认「精确相等」，不做包含匹配
@@ -695,13 +715,24 @@ static UIView *makVictimContainer(UIView *start) {
 static void sweepUIItems(UIView *root) {
     if (root == nil) return;
     if (!bidIsAmap(NSBundle.mainBundle.bundleIdentifier)) return;  // 只做有数据的目标
-    if (gUIHiddenAnchors.count == 0U) return;                      // 全部显示 -> 早退
+    if (gUIHiddenAnchors.count == 0U && gUIHiddenClasses.count == 0U) return;  // 全显示 -> 早退
 
     NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
     NSUInteger guard = 0U;
     while (stack.count > 0U && guard++ < 4000U) {
         UIView *v = stack.lastObject;
         [stack removeLastObject];
+        if (v.isHidden) continue;            // 已经藏过的（上一轮补扫）直接跳过，开销可忽略
+        NSString *cn = NSStringFromClass(v.class);
+
+        // (1) 类名锚点：整块容器直接隐藏，优先级高于文案
+        if ([gUIHiddenClasses containsObject:cn]) {
+            MAKLog(@"UI HIDE class=%@", cn);
+            v.hidden = YES;
+            continue;
+        }
+
+        // (2) 文案锚点：精确匹配后向上找最近的可藏容器
         NSString *hit = makMatchedAnchor(v);
         if (hit) {
             UIView *victim = makVictimContainer(v);
@@ -711,14 +742,15 @@ static void sweepUIItems(UIView *root) {
                 // 父视图仍按数据源持有它，硬摘会引发布局错乱甚至崩溃。hidden 已足够。
                 victim.hidden = YES;
             } else {
-                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏)",
-                       hit, NSStringFromClass(v.class));
+                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏)", hit, cn);
             }
             continue;   // 已处理，不再下钻该子树
         }
         for (UIView *s in v.subviews) [stack addObject:s];
     }
 }
+
+// 注：sweepUIItemsLater() 定义在 makSniff() 之后（要用到它），见下方。
 
 // ---------------------------------------------------------------------------
 // 文案嗅探（DebugLog 打开时才跑）
@@ -791,19 +823,31 @@ static void makSniff(UIView *root, NSString *where) {
     }
 }
 
+// 多轮补扫：
+// 真机日志证实工具宫格的条目是**服务端下发**的（上一版日志还是「实时公交」，下一版就变成
+// 「秒送」），而网络数据往往在首帧之后才回到。只在 0.3s 那一帧扫一次会漏掉后加载的条目，
+// 所以按 0.3 / 1.6 / 4.0 秒补三轮。已经藏过的视图会被 sweepUIItems 里的 isHidden 短路跳过，
+// 重复开销量可以忽略。
+static void sweepUIItemsLater(UIView *root, NSString *where) {
+    static const NSTimeInterval kDelays[] = { 0.3, 1.6, 4.0 };
+    for (NSUInteger i = 0U; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kDelays[i] * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            if (root == nil || root.window == nil) return;  // VC 已经不在界面上了，别动它的 view
+            makSniff(root, where);
+            sweepUIItems(root);             // Layer 4 逐项去留：独立于 ViewSweep 开关
+            if (!gViewSweep) return;        // Layer 1 清扫层：受 ViewSweep 控制
+            sweepView(root);
+        });
+    }
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     UIViewController *vc = self;
     NSString *where = NSStringFromClass(vc.class);
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
-                   dispatch_get_main_queue(), ^{
-        if (!vc.view) return;
-        makSniff(vc.view, where);           // 文案/类名嗅探（仅 DebugLog）
-        sweepUIItems(vc.view);              // Layer 4 逐项去留：独立于 ViewSweep 开关
-        if (!gViewSweep) return;            // Layer 1 清扫层：受 ViewSweep 控制
-        sweepView(vc.view);
-    });
+    sweepUIItemsLater(vc.view, where);
 }
 %end
 
