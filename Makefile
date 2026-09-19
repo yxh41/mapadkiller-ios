@@ -27,7 +27,10 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME := MapAdKiller
 MapAdKiller_FILES := Tweak.xm
 MapAdKiller_FRAMEWORKS := UIKit Foundation
-MapAdKiller_CFLAGS := -fobjc-arc -Werror
+# mak_ui_items.h 是 re/gen_ui.py 生成的锚点表（与 Root.plist 同源）。
+# Tweak.xm 被 logos 预处理后会写到 build 目录再交给 clang，届时 quoted include 是相对
+# 「预处理产物所在目录」解析的，找不到源文件这一层 —— 所以必须显式把工程根目录挂进 -I。
+MapAdKiller_CFLAGS := -fobjc-arc -Werror -I$(shell pwd)
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 

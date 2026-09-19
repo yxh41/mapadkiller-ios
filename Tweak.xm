@@ -19,6 +19,8 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #include <stdarg.h>
+// 由 re/gen_ui.py 生成，与 Preferences/Resources/Root.plist 同源，勿手改
+#include "mak_ui_items.h"
 
 // 构建标记：CI 会把 +<commit短哈希> 注入这里（见 .github/workflows/build.yml），
 // 保证每个 deb 都能自报自己是哪个 commit —— 用户历史上多次装错版本，这个必须有。
@@ -423,10 +425,14 @@ static BOOL adNameMatch(NSString *name) {
     while ([nm hasPrefix:@"_"]) nm = [nm substringFromIndex:1U];   // __AJXxx / _TtCxx
     if (nm.length < 4U) return NO;
     // 绝不碰系统框架类（等价 Android isSdkClass 闸门，防全局误伤）
+    // ⚠️ "AD" 单独作为前缀是 iAd / AppleDepth 的地盘（ADClient、ADCamera、ADAttribution…），
+    //    真机日志里光 AppleDepth.framework 就贡献了 58 个这样的类。
+    //    真正的广告 SDK 类名基本都带厂商前缀（GAD*/BUAd*/CSJ*），不会裸奔一个 AD 开头。
     if ([nm hasPrefix:@"UI"] || [nm hasPrefix:@"NS"] || [nm hasPrefix:@"CA"] ||
         [nm hasPrefix:@"CG"] || [nm hasPrefix:@"WK"] || [nm hasPrefix:@"MK"] ||
         [nm hasPrefix:@"CL"] || [nm hasPrefix:@"AV"] || [nm hasPrefix:@"CT"] ||
-        [nm hasPrefix:@"CF"] || [nm hasPrefix:@"SK"] || [nm hasPrefix:@"PH"]) {
+        [nm hasPrefix:@"CF"] || [nm hasPrefix:@"SK"] || [nm hasPrefix:@"PH"] ||
+        [nm hasPrefix:@"AD"]) {
         return NO;
     }
     NSString *low = nm.lowercaseString;
@@ -586,52 +592,15 @@ static void sweepKeyWindow(void) {
 //    写入 / 高德读取这条链路失效，则全部项维持默认「显示」（去广告三层不受影响）。
 //    装机后开 DebugLog 看有没有 "ui items: hidden anchors=N" 即可确认链路是否通。
 
+// ⚠️ 这张表不再手写在 Tweak.xm 里 —— 面板开关和文案锚点必须永远一致，否则会出现
+//    「面板上有开关、点了没反应」这种最难排查的假象。现在两者都由 re/gen_ui.py 从同一份
+//    SPEC 表生成：Preferences/Resources/Root.plist（面板）+ mak_ui_items.h（这张表）。
+//    改 UI 项请改 re/gen_ui.py 里的 SPEC，然后重跑一次脚本，别直接动这两个产物。
 static NSDictionary<NSString *, NSArray<NSString *> *> *makUIAnchors(void) {
     static NSDictionary<NSString *, NSArray<NSString *> *> *m = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        m = @{
-            // ---- 标签栏（锚点 = Android Config.TABS，直接生效）----
-            @"ui_tab_home":        @[@"首页"],
-            @"ui_tab_explore":     @[@"探索"],
-            @"ui_tab_voice":       @[@"长按说话"],
-            @"ui_tab_taxi":        @[@"打车"],
-            @"ui_tab_mine":        @[@"我的"],
-
-            // ---- 首页工具宫格（锚点 = Android Config.TOOLS，直接生效）----
-            @"ui_tool_drive":      @[@"驾车"],
-            @"ui_tool_bus":        @[@"公交地铁"],
-            @"ui_tool_rental":     @[@"租车"],
-            @"ui_tool_taxi":       @[@"打车"],
-            @"ui_tool_hotel":      @[@"订酒店"],
-            @"ui_tool_train":      @[@"火车票"],
-            @"ui_tool_carpool":    @[@"顺风车"],
-            @"ui_tool_scanstreet": @[@"高德扫街"],
-            @"ui_tool_daijia":     @[@"代驾"],
-            @"ui_tool_more":       @[@"更多工具"],
-
-            // ---- 扩展工具页（锚点 = Android Config 注释）----
-            @"ui_tool_extra_page": @[@"景点游玩", @"离线地图", @"通行费助手", @"收藏夹", @"旅游度假"],
-
-            // ---- 「我的」页（锚点待 B 步骤校准，空 = 不生效）----
-            @"ui_my_order_row":    @[],   // 订单栏
-            @"ui_my_service_row":  @[],   // 车辆服务栏
-            @"ui_my_task":         @[],   // 达人任务
-            @"ui_my_promo_row":    @[],   // 运营卡栏
-            @"ui_my_guess":        @[],   // 猜你喜欢
-            @"ui_my_quality":      @[],   // 资质信息 / 协议中心
-
-            // ---- 首页推荐信息流（锚点待 B 步骤校准，空 = 不生效）----
-            @"ui_feed_weather":    @[],   // 天气卡
-            @"ui_feed_scenic":     @[],   // 周边景区
-            @"ui_feed_posts":      @[],   // 榜单帖
-            @"ui_feed_distance":   @[],   // 距离卡（公里 / 米）
-            @"ui_feed_rank":       @[],   // 精选榜单
-            @"ui_feed_content":    @[],   // 攻略内容流
-            @"ui_feed_ai":         @[],   // 问问 AI
-            @"ui_feed_filter":     @[],   // 推荐频道栏
-            @"ui_home_chips":      @[],   // 设置家
-        };
+        m = MAK_UI_ITEMS;
     });
     return m;
 }
@@ -682,14 +651,42 @@ static NSString *makMatchedAnchor(UIView *v) {
 }
 
 // 从命中的文案向上找最近的可藏容器；找不到返回 nil（fail-open，宁可不藏也不误伤）
+//
+// ⚠️ 真机校准（2026-09-19 UI CLS 行）之前的写法只认 "TabBarButton"，
+//    但高德 iOS 的标签栏容器实际叫 **WINTabBarItem / WINTabBarSubItem**，
+//    根本没有 "TabBarButton" 这四个字 —— 所以即使文案命中了也一律走到 UI SKIP。
+//    这里改成「名字模式 + cell + 尺寸受限的 UIControl」三重判定：
+//      · 名字模式：真机出现过且粒度正确的容器
+//      · cell：列表 / 宫格的标准容器
+//      · UIControl：兜底，但要求宽度不超过屏幕 60%，防止把整条 WINTabBar 端掉
 static UIView *makVictimContainer(UIView *start) {
+    static NSArray<NSString *> *pats = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        pats = @[
+            @"TabBarButton",   // iOS 原生 UITabBarButton
+            @"TabBarItem",     // 高德 WINTabBarItem
+            @"TabBarSubItem",  // 高德 WINTabBarSubItem
+            @"ItemView",       // 高德 GDLiteHomeCompanyItemView
+            @"ToolBox",        // 高德 GDLiteToolBoxView
+            @"WidgetView",     // 地图浮层小组件
+            @"VerticalScrollRow" // 首页滚动词条
+        ];
+    });
+    CGFloat maxW = UIScreen.mainScreen.bounds.size.width * 0.6;
     UIView *cur = start;
     for (NSUInteger i = 0U; i < 8U && cur != nil; i++) {
         NSString *cn = NSStringFromClass(cur.class);
-        if ([cn containsString:@"TabBarButton"]) return cur;   // 标签栏按钮（私有类）
+        for (NSString *p in pats) {
+            if ([cn containsString:p]) return cur;
+        }
         if ([cur isKindOfClass:[UICollectionViewCell class]]) return cur;
         if ([cur isKindOfClass:[UITableViewCell class]]) return cur;
-        if ([cur isKindOfClass:[UIButton class]]) return cur;
+        if ([cur isKindOfClass:[UIControl class]] &&
+            CGRectGetWidth(cur.bounds) > 0.0 &&
+            CGRectGetWidth(cur.bounds) <= maxW) {
+            return cur;
+        }
         cur = cur.superview;
     }
     return nil;
@@ -710,10 +707,12 @@ static void sweepUIItems(UIView *root) {
             UIView *victim = makVictimContainer(v);
             if (victim) {
                 MAKLog(@"UI HIDE anchor=%@ victim=%@", hit, NSStringFromClass(victim.class));
+                // 只 hidden，不 removeFromSuperview：列表 / 宫格 cell 被回收复用时，
+                // 父视图仍按数据源持有它，硬摘会引发布局错乱甚至崩溃。hidden 已足够。
                 victim.hidden = YES;
-                [victim removeFromSuperview];
             } else {
-                MAKLog(@"UI SKIP anchor=%@ (未找到容器，保守不藏)", hit);
+                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏)",
+                       hit, NSStringFromClass(v.class));
             }
             continue;   // 已处理，不再下钻该子树
         }
@@ -724,11 +723,18 @@ static void sweepUIItems(UIView *root) {
 // ---------------------------------------------------------------------------
 // 文案嗅探（DebugLog 打开时才跑）
 //
-// 真机日志显示：5 个已关闭项的锚点一个都没命中（0 条 UI HIDE / UI SKIP），
-// 说明高德首页大概率是 AJX 自绘，原生 UILabel 树里根本没有"驾车"/"更多工具"这类文案。
-// 与其盲猜，不如让 tweak 自己把视图树里出现过的短文案抄进日志 —— 用户开一次 DebugLog、
-// 翻一遍页面，我们就能拿到真机真实文案，直接拿来填 makUIAnchors 的空锚点。
-// 等价于 Android 端用 Frida/flex 抓树，但零依赖、跨进程日志就能拿到。
+// 背景：早期日志里 5 个已关闭项的锚点一个都没命中（0 条 UI HIDE / UI SKIP），一度怀疑
+// 高德首页是 AJX 自绘、原生 UILabel 树里没文案。加上这层嗅探后真相大白 ——
+// 真机 UI TXT 直接吐出了：我的 | 打车 | 消息 | 附近 | 首页 | 扫一扫 | 语音输入 |
+// 查找地点、公交、地铁 | 去设置 | 去单位 | 回家 | 更多工具 | 代驾 | 实时公交 |
+// 顺风车 | 火车票机票 | 订酒店 | 优惠加油 | 公交 | 驾车 | 路线 | 更多 | 图层 | 我的位置
+// 也就是说：**文案全在原生 UILabel 上，问题出在锚点表本身写错了**
+// （安卓的「探索/长按说话/火车票」在 iOS 上叫「附近/语音输入/火车票机票」），
+// 以及容器判定写错了（只认 TabBarButton，高德实际是 WINTabBarItem）。
+// 两处都已在 re/gen_ui.py 与 makVictimContainer 里按真机数据修好。
+//
+// 这层嗅探留着继续用：还剩「我的」页和信息流 15 项没锚点，
+// 开 DebugLog 翻一遍那两个页面，把 UI TXT 行发回来即可直接回填。
 //
 // 去重：每条文案 / 每个类名只记一次，不会刷屏。
 // ---------------------------------------------------------------------------
@@ -803,6 +809,31 @@ static void makSniff(UIView *root, NSString *where) {
 
 #pragma mark - Layer 2: 广告 SDK 运行时自动拦截（Android SdkAutoBlock 等价）
 
+#pragma mark - 闸门 4：展示闸门保护（Aggressive 关时才生效）
+//
+// 真机日志暴露的问题：Layer 2 扫到 WINSplashScreenPresenter 时，把
+//   presentRealTimeSplashScreen:scene:...: / addSplashViewForResource:creative:sessionId:
+//   downloadSplashScreenAssets:scene:completionBlock: / asyncIsLocalSplashDataCanExposure:
+// 这些都 no-op 了 —— 而这批方法恰恰是 Layer 3 激进层里「默认关、会卡启动页」的那几个。
+// 结果就是：用户没开 Aggressive，激进层的风险却已经由 Layer 2 替他承担了，
+// 「激进层默认关」这个闸门形同虚设。
+//
+// 所以 Layer 2 也必须遵守同一条纪律：没开 Aggressive 时，凡是有这些特征的一律让开：
+//   present*          展示闸门（App 可能在等开屏结束的回调，no-op 会卡在启动页）
+//   *completionBlock: 带 block 的异步方法（回调链断裂）
+//   async*            同上
+//   add*View*         往视图树上挂开屏 View 的入口
+static BOOL makRiskySelector(NSString *selName) {
+    if (selName.length == 0U) return NO;
+    if ([selName hasPrefix:@"present"] || [selName hasPrefix:@"Present"]) return YES;
+    if ([selName hasPrefix:@"async"]   || [selName hasPrefix:@"Async"])   return YES;
+    if ([selName rangeOfString:@"completion" options:NSCaseInsensitiveSearch]
+        .location != NSNotFound) return YES;
+    if ([selName hasPrefix:@"add"] &&
+        [selName rangeOfString:@"View"].location != NSNotFound) return YES;
+    return NO;
+}
+
 static void blockAdSDKs(void) {
     if (!gSdkBlock) return;
     int count = objc_getClassList(NULL, 0);
@@ -810,9 +841,11 @@ static void blockAdSDKs(void) {
     Class *classes = (Class *)calloc((size_t)count, sizeof(Class));
     if (!classes) return;
     int got = objc_getClassList(classes, count);
-    int hookedClasses = 0;
+    int scannedClasses = 0;
+    int blockedClasses = 0;
     int hookedMethods = 0;
     int skippedSystem = 0;
+    int riskySkipped = 0;
     NSString *appPrefix = makAppPathPrefix();
     MAKLog(@"SDK block scan: classes=%d appPath=%@", got, appPrefix ?: @"(nil)");
     for (int i = 0; i < got; i++) {
@@ -828,21 +861,30 @@ static void blockAdSDKs(void) {
         unsigned int mcount = 0;
         Method *methods = class_copyMethodList(c, &mcount);
         if (!methods) continue;
+        BOOL touchedThisClass = NO;
         for (unsigned int j = 0; j < mcount; j++) {
             SEL sel = method_getName(methods[j]);
             NSString *selName = NSStringFromSelector(sel);
-            if (isAdSelector(selName)) {
-                method_setImplementation(methods[j], (IMP)adNoOp);
-                hookedMethods++;
-                MAKLog(@"SDK BLOCK %@ %@", cname, selName);
+            if (!isAdSelector(selName)) continue;
+            // 闸门 4：没开激进层时，展示闸门 / 带 block 的异步方法必须让开
+            if (!gAggressive && makRiskySelector(selName)) {
+                riskySkipped++;
+                MAKLog(@"SDK SKIP(risky) %@ %@", cname, selName);
+                continue;
             }
+            method_setImplementation(methods[j], (IMP)adNoOp);
+            hookedMethods++;
+            touchedThisClass = YES;
+            MAKLog(@"SDK BLOCK %@ %@", cname, selName);
         }
         free(methods);
-        if (mcount > 0) hookedClasses++;
+        if (mcount > 0) scannedClasses++;
+        if (touchedThisClass) blockedClasses++;
     }
     free(classes);
-    MAKNote(@"SDK block done: classes=%d methods=%d skippedSystem=%d",
-            hookedClasses, hookedMethods, skippedSystem);
+    MAKNote(@"SDK block done: scanned=%d blockedClasses=%d methods=%d "
+            @"skippedSystem=%d skippedRisky=%d",
+            scannedClasses, blockedClasses, hookedMethods, skippedSystem, riskySkipped);
 }
 
 #pragma mark - Layer 3: 定点 hook

@@ -2,560 +2,700 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>title</key>
+	<string>MapAdKiller</string>
 	<key>items</key>
 	<array>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>高德 / 百度 / 腾讯地图 去开屏广告 + 首页 Banner + 广告 SDK 拦截（roothide / iOS 16）</string>
 			<key>label</key>
 			<string>MapAdKiller</string>
+			<key>footerText</key>
+			<string>高德 / 百度 / 腾讯地图 去开屏广告 + 首页 Banner + 广告 SDK 拦截（roothide / iOS 16）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>总开关。关闭后完全不注入去广告逻辑。</string>
 			<key>key</key>
 			<string>Enabled</string>
 			<key>label</key>
 			<string>启用</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>总开关。关闭后完全不注入去广告逻辑。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>UIView 树清扫层：按类名 / accessibilityLabel 隐藏移除广告视图。</string>
 			<key>key</key>
 			<string>ViewSweep</string>
 			<key>label</key>
 			<string>视图清扫</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>UIView 树清扫层：按类名 / accessibilityLabel 隐藏移除广告视图。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>广告 SDK 运行时自动拦截层：枚举广告厂商类并 no-op 其展示方法。</string>
 			<key>key</key>
 			<string>SdkBlock</string>
 			<key>label</key>
 			<string>SDK 拦截</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>广告 SDK 运行时自动拦截层：只拦 App 自带的广告类，系统框架一律放行。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>激进层：直接 no-op 开屏展示闸门。效果最狠，但有卡在启动页的风险，安全层不够时再开。</string>
 			<key>key</key>
 			<string>Aggressive</string>
 			<key>label</key>
 			<string>激进模式</string>
+			<key>default</key>
+			<false/>
+			<key>footnote</key>
+			<string>激进层：直接 no-op 开屏展示闸门。效果最狠，但有卡在启动页的风险，安全层不够时再开。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>按 App 单独启用 / 关闭。Bundle：高德 com.autonavi.amap、百度 com.baidu.BaiduMap、腾讯 com.tencent.map。</string>
 			<key>label</key>
 			<string>按 App 启用</string>
+			<key>footerText</key>
+			<string>按 App 单独启用 / 关闭。Bundle：高德 com.autonavi.amap、百度 com.baidu.BaiduMap、腾讯 com.tencent.map。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>Amap</string>
 			<key>label</key>
 			<string>高德地图</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>Bmap</string>
 			<key>label</key>
 			<string>百度地图</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>Tmap</string>
 			<key>label</key>
 			<string>腾讯地图</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>高德 · 底部标签栏</string>
 			<key>footerText</key>
 			<string>隐藏底部标签。按 tab 文案精确匹配，默认全部显示；改动后强停高德重开生效。</string>
-			<key>label</key>
-			<string>高德 · 标签栏</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tab_home</string>
 			<key>label</key>
 			<string>首页</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tab_explore</string>
 			<key>label</key>
-			<string>探索</string>
+			<string>附近 / 探索</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>iOS 真机文案是「附近」，安卓是「探索」，两个都收。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tab_voice</string>
 			<key>label</key>
-			<string>长按说话</string>
+			<string>语音输入</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>iOS 真机文案是「语音输入」，安卓是「长按说话」。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tab_taxi</string>
 			<key>label</key>
 			<string>打车</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_tab_message</string>
+			<key>label</key>
+			<string>消息</string>
 			<key>default</key>
 			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tab_mine</string>
 			<key>label</key>
 			<string>我的</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>逐格隐藏工具入口（文案锚点取自安卓版 Config.TOOLS，两端一致）。默认全部显示。</string>
 			<key>label</key>
-			<string>高德 · 首页工具宫格</string>
+			<string>高德 · 首页搜索栏</string>
+			<key>footerText</key>
+			<string>搜索框那一行的入口按钮。同样按文案精确匹配。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_search_scan</string>
+			<key>label</key>
+			<string>扫一扫</string>
 			<key>default</key>
 			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_search_voice</string>
+			<key>label</key>
+			<string>语音输入（搜索栏）</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>高德 · 首页工具宫格</string>
+			<key>footerText</key>
+			<string>逐格隐藏工具入口。锚点已用真机日志的 UI TXT 校准（安卓文案 + iOS 文案都收）。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_drive</string>
 			<key>label</key>
 			<string>驾车</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_bus</string>
 			<key>label</key>
-			<string>公交地铁</string>
+			<string>公交 / 公交地铁</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>iOS 真机同时存在「公交」「实时公交」。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_rental</string>
 			<key>label</key>
 			<string>租车</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_taxi</string>
 			<key>label</key>
 			<string>打车</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_hotel</string>
 			<key>label</key>
 			<string>订酒店</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_train</string>
 			<key>label</key>
-			<string>火车票</string>
+			<string>火车票机票</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>iOS 真机文案是「火车票机票」，安卓是「火车票」。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_carpool</string>
 			<key>label</key>
 			<string>顺风车</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_scanstreet</string>
 			<key>label</key>
 			<string>高德扫街</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_daijia</string>
 			<key>label</key>
 			<string>代驾</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_tool_gas</string>
+			<key>label</key>
+			<string>优惠加油</string>
 			<key>default</key>
 			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_tool_more</string>
 			<key>label</key>
 			<string>更多工具</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>景点游玩 / 离线地图 / 通行费助手 / 收藏夹 / 旅游度假。安卓版同样默认隐藏，按需打开。</string>
 			<key>key</key>
 			<string>ui_tool_extra_page</string>
 			<key>label</key>
 			<string>扩展工具页</string>
+			<key>default</key>
+			<false/>
+			<key>footnote</key>
+			<string>景点游玩 / 离线地图 / 通行费助手 / 收藏夹 / 旅游度假。安卓版同样默认隐藏，按需打开。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>锚点待先用 Frida 取真机文案校准（B 步骤），目前关闭这几项暂不会生效——宁可不藏也不误伤。</string>
 			<key>label</key>
-			<string>高德 · 「我的」页</string>
+			<string>高德 · 家 / 公司快捷</string>
+			<key>footerText</key>
+			<string>GDLiteHomeCompanyView 上的三个快捷入口。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_home_shortcut</string>
+			<key>label</key>
+			<string>回家 / 去单位 / 去设置</string>
 			<key>default</key>
 			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>高德 · 地图浮层按钮</string>
+			<key>footerText</key>
+			<string>地图画布上的浮动小按钮。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_map_route</string>
+			<key>label</key>
+			<string>路线</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_map_more</string>
+			<key>label</key>
+			<string>更多</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_map_layers</string>
+			<key>label</key>
+			<string>图层</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_map_locate</string>
+			<key>label</key>
+			<string>我的位置</string>
+			<key>default</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>高德 · 「我的」页</string>
+			<key>footerText</key>
+			<string>锚点尚未校准（需要先打开 DebugLog 翻一遍「我的」页取真机文案）。锚点为空 = 不生效，宁可不藏也不误伤。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_order_row</string>
 			<key>label</key>
 			<string>订单栏</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_service_row</string>
 			<key>label</key>
 			<string>车辆服务栏</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_task</string>
 			<key>label</key>
 			<string>达人任务</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_promo_row</string>
 			<key>label</key>
 			<string>运营卡栏</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_guess</string>
 			<key>label</key>
 			<string>猜你喜欢</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_my_quality</string>
 			<key>label</key>
-			<string>资质信息/协议中心</string>
+			<string>资质信息 / 协议中心</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>同上：锚点待校准，目前暂不生效。</string>
 			<key>label</key>
 			<string>高德 · 首页推荐信息流</string>
+			<key>footerText</key>
+			<string>锚点尚未校准，同上：空锚点 = 不生效。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_weather</string>
 			<key>label</key>
 			<string>天气卡</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_scenic</string>
 			<key>label</key>
 			<string>周边景区</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_posts</string>
 			<key>label</key>
 			<string>榜单帖</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_distance</string>
 			<key>label</key>
 			<string>距离卡</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_rank</string>
 			<key>label</key>
 			<string>精选榜单</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_content</string>
 			<key>label</key>
 			<string>攻略内容流</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_ai</string>
 			<key>label</key>
 			<string>问问 AI</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_feed_filter</string>
 			<key>label</key>
 			<string>推荐频道栏</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
 			<key>key</key>
 			<string>ui_home_chips</string>
 			<key>label</key>
 			<string>设置家</string>
+			<key>default</key>
+			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>日志统一前缀 [MapAdKiller]。改完开关需强停目标 App 重开才生效（偏好只在注入那一刻读取）。</string>
 			<key>label</key>
 			<string>调试</string>
+			<key>footerText</key>
+			<string>日志统一前缀 [MapAdKiller]。改完开关需强停目标 App 重开才生效（偏好只在注入那一刻读取）。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>实时 syslog：打印清扫 / SDK 拦截 / 逐项隐藏明细。需连电脑抓（Console.app 或 pymobiledevice3）。</string>
 			<key>key</key>
 			<string>DebugLog</string>
 			<key>label</key>
 			<string>调试日志</string>
+			<key>default</key>
+			<false/>
+			<key>footnote</key>
+			<string>实时 syslog：清扫 / SDK 拦截 / 逐项隐藏明细，外加 UI TXT / UI CLS 两行视图树嗅探结果。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
 			<key>defaults</key>
 			<string>com.yxh41.mapadkiller</string>
-			<key>footnote</key>
-			<string>把日志同时写到文件，手机上 Filza 直接翻，不用连电脑。实际路径会在 syslog 里打印（搜「log file:」）；候选顺序：/var/mobile/Documents → /var/jb/... → 兜底高德容器 Documents。单文件超过 256KB 自动截断。</string>
 			<key>key</key>
 			<string>FileLog</string>
 			<key>label</key>
 			<string>文件日志</string>
+			<key>default</key>
+			<false/>
+			<key>footnote</key>
+			<string>把日志同时写到文件，手机上 Filza 直接翻，不用连电脑。实际路径会在 syslog 里打印（搜「log file:」）；候选顺序：/var/mobile/Documents → /var/jb/... → 兜底高德容器 Documents。单文件超过 256KB 自动截断。</string>
 		</dict>
 	</array>
-	<key>title</key>
-	<string>MapAdKiller</string>
 </dict>
 </plist>
