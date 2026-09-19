@@ -9,9 +9,12 @@ name: Build MapAdKiller (roothide)
 # 注意：roothide/theos 的 include/ 是空目录，社区也没有 Cephei 的 roothide fork，
 #       所以本工程不依赖 Cephei（偏好走编译期默认值）。别再往回加 HBPreferences。
 
+# 触发策略：仅手动。
+# 原因：GitHub contents API 是「一个文件 = 一个 commit = 一个 push 事件」，
+# 若保留 on: push，一次推送 N 个文件就会触发 N 次构建，且每个 run 检出自己那个
+# 可能残缺的 commit sha，会往 deb-artifacts 里塞半成品 deb（极易「装错版本」）。
+# 配合单 commit 推送脚本（re/_push_single.py）使用：推完文件或触发一次即可。
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
 
 env:
