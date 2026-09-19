@@ -68,6 +68,11 @@ static BOOL gAmap       = YES;
 static BOOL gBmap       = YES;
 static BOOL gTmap       = YES;
 
+// Layer 4「逐项 UI 去留」用的状态（详见下方 makUIAnchors 注释）
+static NSDictionary *gUIPrefs = nil;                  // 全局 plist 里 ui_* 键值（全量保留）
+static NSSet<NSString *> *gUIHiddenAnchors = nil;     // 当前被关闭项的「中文文案锚点」集合
+static void makUIRecompute(void);                     // 前向声明（定义在 Layer 4 区段）
+
 static BOOL makBool(NSDictionary *dict, NSString *key, BOOL fallback) {
     id v = [dict objectForKey:key];
     if ([v isKindOfClass:[NSNumber class]]) return [(NSNumber *)v boolValue];
@@ -101,6 +106,10 @@ static void gPrefs_load(void) {
     gAmap       = makBool(d, @"Amap",       gAmap);
     gBmap       = makBool(d, @"Bmap",       gBmap);
     gTmap       = makBool(d, @"Tmap",       gTmap);
+
+    // ui_* 是 Layer 4 逐项去留的键；缺任何一项都按「显示」处理（fail-safe）
+    gUIPrefs    = d;
+    makUIRecompute();
 }
 static void MAKLog(NSString *fmt, ...) {
     if (!gDebugLog) return;
@@ -301,14 +310,173 @@ static void sweepKeyWindow(void) {
     if (win) sweepView(win);
 }
 
+#pragma mark - Layer 4: 逐项 UI 去留（对齐 Android Config.java 的 tab_* / tool_* / my_*）
+//
+// Android 的做法：AJX 卡片挂在 RecyclerView adapter 上，用「中文文案锚点」在
+// onBindViewHolder 绑定完成的那一帧隐藏 —— 卡片一次都不会被绘制（README:38-39）。
+// iOS 端在拿到真机视图树之前无从得知 cell 适配器，这里先用同样可靠的「精确文案锚点」
+// 做等价实现：遍历 UILabel / UIButton，文案与目标项**精确相等**时，向上找到最近的
+// 可藏容器（标签栏按钮 / UICollectionViewCell / UITableViewCell / UIButton）再隐藏。
+//
+// 三重 fail-safe：
+//   1) 所有项默认「显示」，只有用户显式关掉才隐藏；读不到偏好 = 全显示。
+//   2) 向上找容器最多 8 层，找不到就不藏 —— 避免误伤地图画布里的 POI 文字标注。
+//   3) 文案用「精确相等」而非包含匹配，"打车" 不会误伤某个叫 "打车XYZ" 的东西。
+//
+// ⚠️ 锚点来源：标签栏 / 工具宫格的文案直接取自 Android 版 Config.TABS / Config.TOOLS
+//    （同一产品两端文案一致），这部分可靠、立即生效。
+//    「我的」页与信息流的锚点需要用 re/dump_views.js 取真机文案后再填，
+//    那 15 项目前是空锚点 = 不生效（不会瞎藏），等 B 步骤校准。
+//
+// ⚠️ 另一个前置条件：本层依赖 Layer 4 能读到全局 plist。若 roothide 下 Settings
+//    写入 / 高德读取这条链路失效，则全部项维持默认「显示」（去广告三层不受影响）。
+//    装机后开 DebugLog 看有没有 "ui items: hidden anchors=N" 即可确认链路是否通。
+
+static NSDictionary<NSString *, NSArray<NSString *> *> *makUIAnchors(void) {
+    static NSDictionary<NSString *, NSArray<NSString *> *> *m = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        m = @{
+            // ---- 标签栏（锚点 = Android Config.TABS，直接生效）----
+            @"ui_tab_home":        @[@"首页"],
+            @"ui_tab_explore":     @[@"探索"],
+            @"ui_tab_voice":       @[@"长按说话"],
+            @"ui_tab_taxi":        @[@"打车"],
+            @"ui_tab_mine":        @[@"我的"],
+
+            // ---- 首页工具宫格（锚点 = Android Config.TOOLS，直接生效）----
+            @"ui_tool_drive":      @[@"驾车"],
+            @"ui_tool_bus":        @[@"公交地铁"],
+            @"ui_tool_rental":     @[@"租车"],
+            @"ui_tool_taxi":       @[@"打车"],
+            @"ui_tool_hotel":      @[@"订酒店"],
+            @"ui_tool_train":      @[@"火车票"],
+            @"ui_tool_carpool":    @[@"顺风车"],
+            @"ui_tool_scanstreet": @[@"高德扫街"],
+            @"ui_tool_daijia":     @[@"代驾"],
+            @"ui_tool_more":       @[@"更多工具"],
+
+            // ---- 扩展工具页（锚点 = Android Config 注释）----
+            @"ui_tool_extra_page": @[@"景点游玩", @"离线地图", @"通行费助手", @"收藏夹", @"旅游度假"],
+
+            // ---- 「我的」页（锚点待 B 步骤校准，空 = 不生效）----
+            @"ui_my_order_row":    @[],   // 订单栏
+            @"ui_my_service_row":  @[],   // 车辆服务栏
+            @"ui_my_task":         @[],   // 达人任务
+            @"ui_my_promo_row":    @[],   // 运营卡栏
+            @"ui_my_guess":        @[],   // 猜你喜欢
+            @"ui_my_quality":      @[],   // 资质信息 / 协议中心
+
+            // ---- 首页推荐信息流（锚点待 B 步骤校准，空 = 不生效）----
+            @"ui_feed_weather":    @[],   // 天气卡
+            @"ui_feed_scenic":     @[],   // 周边景区
+            @"ui_feed_posts":      @[],   // 榜单帖
+            @"ui_feed_distance":   @[],   // 距离卡（公里 / 米）
+            @"ui_feed_rank":       @[],   // 精选榜单
+            @"ui_feed_content":    @[],   // 攻略内容流
+            @"ui_feed_ai":         @[],   // 问问 AI
+            @"ui_feed_filter":     @[],   // 推荐频道栏
+            @"ui_home_chips":      @[],   // 设置家
+        };
+    });
+    return m;
+}
+
+// 只有用户显式关掉（NO / 0 / false）才算隐藏；没配过 = 显示
+static BOOL makUIVisible(NSString *key) {
+    id v = [gUIPrefs objectForKey:key];
+    if ([v isKindOfClass:[NSNumber class]]) return [(NSNumber *)v boolValue];
+    if ([v isKindOfClass:[NSString class]]) {
+        NSString *s = [(NSString *)v lowercaseString];
+        if ([s isEqualToString:@"no"] || [s isEqualToString:@"false"] || [s isEqualToString:@"0"]) return NO;
+        return YES;
+    }
+    return YES;
+}
+
+// 偏好变化后重算「要隐藏的文案集合」。没有任何项关闭 => 空集 => 清扫时直接早退，零开销。
+static void makUIRecompute(void) {
+    NSMutableSet<NSString *> *hid = [NSMutableSet set];
+    [makUIAnchors() enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSArray<NSString *> *anchors, __unused BOOL *stop) {
+        if (anchors.count == 0U) return;   // 锚点未校准 -> 不参与
+        if (makUIVisible(key)) return;     // 用户没关   -> 保持显示
+        for (NSString *a in anchors) {
+            if (a.length > 0U) [hid addObject:a];
+        }
+    }];
+    gUIHiddenAnchors = (hid.count > 0U) ? [hid copy] : nil;
+    MAKLog(@"ui items: hidden anchors=%lu", (unsigned long)hid.count);
+}
+
+// 命中判定：只认「精确相等」，不做包含匹配
+static NSString *makMatchedAnchor(UIView *v) {
+    NSString *t = nil;
+    if ([v isKindOfClass:[UILabel class]]) {
+        t = ((UILabel *)v).text;
+    } else if ([v isKindOfClass:[UIButton class]]) {
+        t = [((UIButton *)v) titleForState:UIControlStateNormal];
+    }
+    if (t.length == 0U) {
+        // 兜底：短无障碍 label（AJX 渲染的控件常常只在 accessibilityLabel 上带文案）
+        NSString *al = v.accessibilityLabel;
+        if (al.length > 0U && al.length <= 8U) t = al;
+    }
+    if (t.length == 0U) return nil;
+    NSString *s = [t stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+    if (s.length == 0U) return nil;
+    return [gUIHiddenAnchors containsObject:s] ? s : nil;
+}
+
+// 从命中的文案向上找最近的可藏容器；找不到返回 nil（fail-open，宁可不藏也不误伤）
+static UIView *makVictimContainer(UIView *start) {
+    UIView *cur = start;
+    for (NSUInteger i = 0U; i < 8U && cur != nil; i++) {
+        NSString *cn = NSStringFromClass(cur.class);
+        if ([cn containsString:@"TabBarButton"]) return cur;   // 标签栏按钮（私有类）
+        if ([cur isKindOfClass:[UICollectionViewCell class]]) return cur;
+        if ([cur isKindOfClass:[UITableViewCell class]]) return cur;
+        if ([cur isKindOfClass:[UIButton class]]) return cur;
+        cur = cur.superview;
+    }
+    return nil;
+}
+
+static void sweepUIItems(UIView *root) {
+    if (root == nil) return;
+    if (!bidIsAmap(NSBundle.mainBundle.bundleIdentifier)) return;  // 只做有数据的目标
+    if (gUIHiddenAnchors.count == 0U) return;                      // 全部显示 -> 早退
+
+    NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
+    NSUInteger guard = 0U;
+    while (stack.count > 0U && guard++ < 4000U) {
+        UIView *v = stack.lastObject;
+        [stack removeLastObject];
+        NSString *hit = makMatchedAnchor(v);
+        if (hit) {
+            UIView *victim = makVictimContainer(v);
+            if (victim) {
+                MAKLog(@"UI HIDE anchor=%@ victim=%@", hit, NSStringFromClass(victim.class));
+                victim.hidden = YES;
+                [victim removeFromSuperview];
+            } else {
+                MAKLog(@"UI SKIP anchor=%@ (未找到容器，保守不藏)", hit);
+            }
+            continue;   // 已处理，不再下钻该子树
+        }
+        for (UIView *s in v.subviews) [stack addObject:s];
+    }
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
-    if (!gViewSweep) return;
     UIViewController *vc = self;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        if (vc.view) sweepView(vc.view);
+        if (!vc.view) return;
+        sweepUIItems(vc.view);      // Layer 4 逐项去留：独立于 ViewSweep 开关
+        if (!gViewSweep) return;    // Layer 1 清扫层：受 ViewSweep 控制
+        sweepView(vc.view);
     });
 }
 %end
