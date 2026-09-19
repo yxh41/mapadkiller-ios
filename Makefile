@@ -7,7 +7,8 @@
 #     标准 theos/theos 没有 roothide scheme，不能用。
 #   * ARCHS 编 arm64 + arm64e：真机 App Store App 走 arm64e，arm64 用于兼容验证。
 #   * 不依赖 Cephei：roothide/theos 的 include/ 是空的，社区也没有 Cephei 的
-#     roothide fork，CI 里编不过。偏好开关目前走编译期默认值（见 Tweak.xm）。
+#     roothide fork，CI 里编不过。设置面板走自写 PreferenceLoader bundle（见 Preferences/ 子工程，
+#     仿 yxh41/Oback 的 ObackPrefsBridge 直写全局 plist，绕开 roothide per-app NSUserDefaults 容器隔离）。
 #   * -Werror：沿用其它 tweak 的 CI 约定；请勿引入废弃 UIKit 调用
 #     （UIApplication.keyWindow / windows / UI_USER_INTERFACE_IDIOM 一律不用）。
 
@@ -29,6 +30,10 @@ MapAdKiller_FRAMEWORKS := UIKit Foundation
 MapAdKiller_CFLAGS := -fobjc-arc -Werror
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
+# 设置面板子工程（编译型 PreferenceLoader bundle，随 tweak 一起打进 roothide .deb）
+SUBPROJECTS = Preferences
+include $(THEOS_MAKE_PATH)/aggregate.mk
 
 after-install::
 	@echo "MapAdKiller: installed. Respring, then reopen the target map app."
