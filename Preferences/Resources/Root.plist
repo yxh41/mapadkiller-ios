@@ -384,9 +384,9 @@
 			<key>label</key>
 			<string>扩展工具页</string>
 			<key>default</key>
-			<false/>
+			<true/>
 			<key>footnote</key>
-			<string>景点游玩 / 离线地图 / 通行费助手 / 收藏夹 / 旅游度假。安卓版同样默认隐藏，按需打开。</string>
+			<string>景点游玩 / 离线地图 / 通行费助手 / 收藏夹 / 旅游度假。安卓版这几项目默认隐藏，但 iOS 真机 UI TXT 里没有这些文案，所以本项在高德 iOS 上实际不生效，改成默认「显示」，避免日志里凭空多出 5 个 hidden anchors。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
