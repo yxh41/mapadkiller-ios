@@ -882,11 +882,42 @@ static void sweepUIItemsLater(UIView *root, NSString *where) {
     }
 }
 
+// 轮询兜底用的 window：只要见过一次就记下来（didMoveToWindow / viewDidAppear 里更新）。
+static UIWindow *gPollWindow = nil;
+
+static void makPollOnce(void) {
+    UIWindow *w = gPollWindow;
+    if (w == nil) return;
+    makSniff(w, @"POLL");       // 内部按 seenText/seenClass 全局去重，稳态不会刷屏
+    sweepUIItems(w);            // Layer 4 逐项去留：独立于 ViewSweep
+    if (!gViewSweep) return;    // Layer 1 清扫层：受 ViewSweep 控制
+    sweepView(w);
+}
+
+// 为什么需要轮询（真机第十二轮证实）：
+// AJX 这类自绘引擎很可能**在已有视图上原地改内容**，压根不挂载新视图 ——
+// 那样 viewDidAppear（新 VC）和 didMoveToWindow（新视图）**两个事件都不会触发**，
+// 单靠事件驱动永远抓不到「我的」这种页面。只能定时轮询兜底。
+// 用 dispatch_after 自递归续期，省掉 timer 对象的生命周期管理；
+// makSniff 全局去重，界面不变时不会产生任何日志。
+static void makPollSchedule(void) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.0 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        makPollOnce();
+        makPollSchedule();
+    });
+}
+
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     UIViewController *vc = self;
     NSString *where = NSStringFromClass(vc.class);
+    if (vc.view.window != nil) {
+        gPollWindow = vc.view.window;
+        static dispatch_once_t pollOnce;
+        dispatch_once(&pollOnce, ^{ makPollSchedule(); });
+    }
     sweepUIItemsLater(vc.view, where);
 }
 %end
@@ -904,6 +935,9 @@ static void sweepUIItemsLater(UIView *root, NSString *where) {
     %orig;
     UIWindow *w = self.window;
     if (w == nil) return;
+    gPollWindow = w;
+    static dispatch_once_t pollOnce;
+    dispatch_once(&pollOnce, ^{ makPollSchedule(); });
     static NSTimeInterval lastAt = 0.0;
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
     if (now - lastAt < 2.0) return;   // 节流 2 秒，滚动时不会每个子视图都排一轮补扫
