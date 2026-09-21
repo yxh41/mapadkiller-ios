@@ -12,7 +12,7 @@
 			<key>label</key>
 			<string>MapAdKiller</string>
 			<key>footerText</key>
-			<string>高德 / 百度 / 腾讯地图 去开屏广告 + 首页 Banner + 广告 SDK 拦截（roothide / iOS 16）</string>
+			<string>高德 / 百度 / 腾讯地图 去开屏广告 + 首页 Banner + 广告 SDK 拦截（roothide / iOS 16）。下方界面项的开关语义是「关闭 = 隐藏、打开 = 保持显示」；如果你只想一键把界面板块全干掉，直接开最上面的「一键隐藏全部界面项 ★」。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -72,6 +72,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>HideAllUI</string>
+			<key>label</key>
+			<string>一键隐藏全部界面项 ★</string>
+			<key>default</key>
+			<false/>
+			<key>footnote</key>
+			<string>★ 懒人开关：打开后，下面所有「界面项」（ui_* / uic_*，共 45 项）**一律隐藏**，逐项设置直接忽略。适合「我不知道该关哪些，反正这些板块我都不想看」的用法。想恢复精细控制，把它关掉即可。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>按 App 启用</string>
@@ -120,7 +134,7 @@
 			<key>label</key>
 			<string>高德 · 底部标签栏</string>
 			<key>footerText</key>
-			<string>隐藏底部标签。按 tab 文案精确匹配，默认全部显示；改动后强停高德重开生效。</string>
+			<string>隐藏底部标签。按 tab 文案精确匹配，默认全部显示；改动后强停高德重开生效。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -204,7 +218,7 @@
 			<key>label</key>
 			<string>高德 · 首页搜索栏</string>
 			<key>footerText</key>
-			<string>搜索框那一行的入口按钮。同样按文案精确匹配。</string>
+			<string>搜索框那一行的入口按钮。同样按文案精确匹配。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -236,7 +250,7 @@
 			<key>label</key>
 			<string>高德 · 首页工具宫格</string>
 			<key>footerText</key>
-			<string>逐格隐藏工具入口。锚点已用真机日志的 UI TXT 校准（安卓文案 + iOS 文案都收）。</string>
+			<string>逐格隐藏工具入口。锚点已用真机日志的 UI TXT 校准（安卓文案 + iOS 文案都收）。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -408,7 +422,7 @@
 			<key>label</key>
 			<string>高德 · 家 / 公司快捷</string>
 			<key>footerText</key>
-			<string>GDLiteHomeCompanyView 上的三个快捷入口。</string>
+			<string>GDLiteHomeCompanyView 上的三个快捷入口。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -428,7 +442,7 @@
 			<key>label</key>
 			<string>高德 · 地图浮层按钮</string>
 			<key>footerText</key>
-			<string>地图画布上的浮动小按钮。</string>
+			<string>地图画布上的浮动小按钮。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -498,7 +512,7 @@
 			<key>label</key>
 			<string>高德 · 整块容器（按类名，抗文案变更）</string>
 			<key>footerText</key>
-			<string>这一组按容器类名整块隐藏，不受服务端轮换词条影响。类名取自真机 UI CLS 行，比文案锚点稳定得多。</string>
+			<string>这一组按容器类名整块隐藏，不受服务端轮换词条影响。类名取自真机 UI CLS 行，比文案锚点稳定得多。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -586,7 +600,7 @@
 			<key>label</key>
 			<string>高德 · 「我的」页 (tab)</string>
 			<key>footerText</key>
-			<string>2026-09-21 第十三轮日志**首次抓到本页**（靠 POLL 轮询捕获：容器是 WINRootView / AJXShadowView / AJXScrollView，确认 AJX 自绘、不走 VC 生命周期）。锚点已按真机文案校准完毕。注意：「协议中心 / 资质信息」实测是**地图署名条**、不在本页，已挪到上面「地图浮层按钮」组。</string>
+			<string>2026-09-21 第十三轮日志**首次抓到本页**（靠 POLL 轮询捕获：容器是 WINRootView / AJXShadowView / AJXScrollView，确认 AJX 自绘、不走 VC 生命周期）。锚点已按真机文案校准完毕。注意：「协议中心 / 资质信息」实测是**地图署名条**、不在本页，已挪到上面「地图浮层按钮」组。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -734,7 +748,7 @@
 			<key>label</key>
 			<string>高德 · 首页信息流运营卡</string>
 			<key>footerText</key>
-			<string>2026-09-21 第十三轮 POLL 抓到的首页信息流文案原样回填。这些卡由服务端下发、文案持续轮换，纯文案锚点只能覆盖当期；想一劳永逸请用上面「整块容器」里的「首页信息流运营卡」（默认已隐藏）。</string>
+			<string>2026-09-21 第十三轮 POLL 抓到的首页信息流文案原样回填。这些卡由服务端下发、文案持续轮换，纯文案锚点只能覆盖当期；想一劳永逸请用上面「整块容器」里的「首页信息流运营卡」（默认已隐藏）。（开关语义：关闭 = 隐藏该项，打开 = 保持显示）</string>
 		</dict>
 		<dict>
 			<key>cell</key>

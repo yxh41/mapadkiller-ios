@@ -70,6 +70,13 @@ static BOOL gFileLog    = NO;   // 文件日志（独立开关，写到文件里
 static BOOL gAmap       = YES;
 static BOOL gBmap       = YES;
 static BOOL gTmap       = YES;
+// 一键隐藏全部界面项。
+// 为什么要它：逐项开关的语义是「打开 = 显示、关闭 = 隐藏」，而绝大多数用户的直觉正好相反
+// （2026-09-22 真机反馈：用户把 60 多个开关**全部打开**，结果一个板块都没消失，
+//   反过来问「我都打开了怎么还看不到效果」）。
+// 与其去反转逐项语义 —— 那会让老用户已存的 True 全部翻成「隐藏」，一升级就把界面搞没 ——
+// 不如加这个总开关：**打开它 = 所有 ui_* / uic_* 板块一律隐藏**，逐项设置直接忽略。
+static BOOL gHideAllUI  = NO;
 
 // Layer 4「逐项 UI 去留」用的状态（详见下方 makUIAnchors 注释）
 static NSDictionary *gUIPrefs = nil;                  // 全局 plist 里 ui_* 键值（全量保留）
@@ -121,6 +128,7 @@ static void gPrefs_load(void) {
     gAmap       = makBool(d, @"Amap",       gAmap);
     gBmap       = makBool(d, @"Bmap",       gBmap);
     gTmap       = makBool(d, @"Tmap",       gTmap);
+    gHideAllUI  = makBool(d, @"HideAllUI",  gHideAllUI);
 
     // ui_* 是 Layer 4 逐项去留的键；缺任何一项都按「显示」处理（fail-safe）
     gUIPrefs    = d;
@@ -637,7 +645,12 @@ static BOOL makUIFactoryVisible(NSString *key) {
 }
 
 // 只有用户显式关掉（NO / 0 / false）才算隐藏；没配过 = 用工厂默认；再兜底 = 显示
+//
+// 语义提醒（面板上也要写清楚）：**YES = 显示，NO = 隐藏**。
+// 用户把开关「打开」= 保持显示，和「打开就去广告」的直觉相反，已经踩过一次。
+// gHideAllUI 打开时直接短路返回 NO（全部隐藏），逐项设置不再参与。
 static BOOL makUIVisible(NSString *key) {
+    if (gHideAllUI) return NO;
     id v = [gUIPrefs objectForKey:key];
     if ([v isKindOfClass:[NSNumber class]]) return [(NSNumber *)v boolValue];
     if ([v isKindOfClass:[NSString class]]) {
@@ -1277,8 +1290,8 @@ static void installTargetedHooks(NSString *bundleID) {
         return;
     }
 
-    MAKNote(@"loaded for %@ | build=%@ | enabled sweep=%d sdk=%d aggressive=%d",
-          bid, MAK_BUILD_TAG, gViewSweep, gSdkBlock, gAggressive);
+    MAKNote(@"loaded for %@ | build=%@ | enabled sweep=%d sdk=%d aggressive=%d hideAllUI=%d",
+          bid, MAK_BUILD_TAG, gViewSweep, gSdkBlock, gAggressive, gHideAllUI);
 
     // Layer 2：广告 SDK 自动拦截（进程内一次性）
     blockAdSDKs();
