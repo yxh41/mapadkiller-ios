@@ -891,6 +891,27 @@ static void sweepUIItemsLater(UIView *root, NSString *where) {
 }
 %end
 
+// ⚠️ 真机前十轮日志的教训：只靠 UIViewController 的 viewDidAppear 触发是不够的。
+// 高德底部「我的」tab 是**在同一个容器 VC（AMNavigationController）里换子视图**渲染的
+// （AJX 自绘，和「我的」抽屉同源），并不会有新的 UIViewController 出现 ——
+// 于是 viewDidAppear 永远不触发，那 5 个「我的」页锚点连一次 UI TXT 都抓不到，
+// 尽管用户每次都停在那儿。
+// 而且这不只是调试问题：sweepUIItems 也挂在同一个触发点上，意味着将来锚点填好了，
+// 在「我的」页同样不会生效。
+// 对策：改由「有视图被挂进 window」驱动，并做节流，避免滚动时每个子视图都触发一次。
+%hook UIView
+- (void)didMoveToWindow {
+    %orig;
+    UIWindow *w = self.window;
+    if (w == nil) return;
+    static NSTimeInterval lastAt = 0.0;
+    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
+    if (now - lastAt < 2.0) return;   // 节流 2 秒，滚动时不会每个子视图都排一轮补扫
+    lastAt = now;
+    sweepUIItemsLater(w, NSStringFromClass(self.class));
+}
+%end
+
 #pragma mark - Layer 2: 广告 SDK 运行时自动拦截（Android SdkAutoBlock 等价）
 
 #pragma mark - 闸门 4：展示闸门保护（Aggressive 关时才生效）
