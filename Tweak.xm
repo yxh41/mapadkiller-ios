@@ -616,7 +616,17 @@ static NSDictionary<NSString *, NSArray<NSString *> *> *makUIClassAnchors(void) 
     return m;
 }
 
-// 只有用户显式关掉（NO / 0 / false）才算隐藏；没配过 = 显示
+// 工厂默认值（MAK_UI_DEFAULTS，与面板同源由 re/gen_ui.py 生成）：
+// 用户的偏好 plist 里查不到这个键时的裁决依据。
+// 没有这一层，新版本新加的 UI 项对老用户**永远不生效** —— plist 里没这个键，
+// 一律按「没配过 = 显示」兜底，用户必须手动翻一次开关才看得见效果。
+// 2026-09-21：uic_feed_promo 连着两轮日志都是 classes=0，就是栽在这里。
+static BOOL makUIFactoryVisible(NSString *key) {
+    NSNumber *v = MAK_UI_DEFAULTS[key];
+    return v ? [v boolValue] : YES;
+}
+
+// 只有用户显式关掉（NO / 0 / false）才算隐藏；没配过 = 用工厂默认；再兜底 = 显示
 static BOOL makUIVisible(NSString *key) {
     id v = [gUIPrefs objectForKey:key];
     if ([v isKindOfClass:[NSNumber class]]) return [(NSNumber *)v boolValue];
@@ -625,7 +635,7 @@ static BOOL makUIVisible(NSString *key) {
         if ([s isEqualToString:@"no"] || [s isEqualToString:@"false"] || [s isEqualToString:@"0"]) return NO;
         return YES;
     }
-    return YES;
+    return makUIFactoryVisible(key);
 }
 
 // 偏好变化后重算「要隐藏的文案集合 / 类名集合」。两个都空 => 清扫时直接早退，零开销。

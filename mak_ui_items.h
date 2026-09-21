@@ -1,5 +1,5 @@
 // 自动生成文件 —— 由 re/gen_ui.py 生成，请勿手改。
-// 数据源同 Preferences/Resources/Root.plist：同一份 SPEC 表两个产物，避免漂移。
+// 数据源同 Preferences/Resources/Root.plist：同一份 SPEC 表多个产物，避免漂移。
 // 锚点来自真机日志 UI TXT / UI CLS（高德 iOS 15.x 原生视图树）。
 #ifndef MAK_UI_ITEMS
 #define MAK_UI_ITEMS \
@@ -45,4 +45,9 @@
     @"uic_map_widget": @[@"MapWidgetContainerView"],\
     @"uic_tabbar": @[@"WINTabBar"],\
     @"uic_feed_promo": @[@"WINOperationWidgetView"]}
+#endif
+
+#ifndef MAK_UI_DEFAULTS
+#define MAK_UI_DEFAULTS \
+    @{@"ui_tab_home": @YES, @"ui_tab_explore": @YES, @"ui_tab_voice": @YES, @"ui_tab_taxi": @YES, @"ui_tab_message": @YES, @"ui_tab_mine": @YES, @"ui_search_scan": @YES, @"ui_search_voice": @YES, @"ui_tool_drive": @YES, @"ui_tool_bus": @YES, @"ui_tool_rental": @YES, @"ui_tool_taxi": @YES, @"ui_tool_hotel": @YES, @"ui_tool_train": @YES, @"ui_tool_carpool": @YES, @"ui_tool_scanstreet": @YES, @"ui_tool_daijia": @YES, @"ui_tool_gas": @YES, @"ui_tool_express": @YES, @"ui_tool_more": @YES, @"ui_tool_extra_page": @YES, @"ui_home_shortcut": @YES, @"ui_map_route": @YES, @"ui_map_more": @YES, @"ui_map_layers": @YES, @"ui_map_locate": @YES, @"uic_toolbox": @YES, @"uic_home_company": @YES, @"uic_searchbar": @YES, @"uic_map_widget": @YES, @"uic_tabbar": @YES, @"uic_feed_promo": @NO, @"ui_my_order_row": @YES, @"ui_my_service_row": @YES, @"ui_my_task": @YES, @"ui_my_promo_row": @YES, @"ui_my_guess": @YES, @"ui_my_quality": @YES}
 #endif
