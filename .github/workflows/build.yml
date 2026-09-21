@@ -137,4 +137,11 @@ jobs:
           cp "$TMP"/* out/ 2>/dev/null || true
           git add out 2>/dev/null || true
           git commit -m "build ${SHA} (deb=${ROOTHIDE_DEB:+1})" >/dev/null 2>&1 || echo "nothing to commit"
-          git push --force origin deb-artifacts 2>&1 | tail -3
+          # 不要再用 `| tail -3` 吞掉 push 错误：push 失败必须让本步非零退出，
+          # 否则 deb-artifacts 没更新、_build_wait 却按成功收场，用户会装错/装不到版本。
+          if git push --force origin deb-artifacts; then
+            echo "::notice::published deb to deb-artifacts"
+          else
+            echo "::error::deb-artifacts publish FAILED — 下次 _build_wait 取不到 deb"
+            exit 1
+          fi
