@@ -18,7 +18,6 @@
     @"ui_tool_hotel": @[@"订酒店"],\
     @"ui_tool_train": @[@"火车票机票", @"火车票"],\
     @"ui_tool_carpool": @[@"顺风车"],\
-    @"ui_tool_scanstreet": @[@"高德扫街"],\
     @"ui_tool_daijia": @[@"代驾"],\
     @"ui_tool_gas": @[@"优惠加油"],\
     @"ui_tool_express": @[@"秒送"],\
@@ -56,5 +55,5 @@
 
 #ifndef MAK_UI_DEFAULTS
 #define MAK_UI_DEFAULTS \
-    @{@"ui_tab_home": @YES, @"ui_tab_explore": @YES, @"ui_tab_voice": @YES, @"ui_tab_taxi": @YES, @"ui_tab_message": @YES, @"ui_tab_mine": @YES, @"ui_search_scan": @YES, @"ui_search_voice": @YES, @"ui_tool_drive": @YES, @"ui_tool_bus": @YES, @"ui_tool_rental": @YES, @"ui_tool_taxi": @YES, @"ui_tool_hotel": @YES, @"ui_tool_train": @YES, @"ui_tool_carpool": @YES, @"ui_tool_scanstreet": @YES, @"ui_tool_daijia": @YES, @"ui_tool_gas": @YES, @"ui_tool_express": @YES, @"ui_tool_more": @YES, @"ui_tool_extra_page": @YES, @"ui_home_shortcut": @YES, @"ui_map_route": @YES, @"ui_map_more": @YES, @"ui_map_layers": @YES, @"ui_map_locate": @YES, @"ui_map_attribution": @YES, @"uic_toolbox": @YES, @"uic_home_company": @YES, @"uic_searchbar": @YES, @"uic_map_widget": @YES, @"uic_tabbar": @YES, @"uic_feed_promo": @NO, @"ui_my_order_row": @YES, @"ui_my_service_row": @YES, @"ui_my_task": @YES, @"ui_my_promo_row": @YES, @"ui_my_guess": @YES, @"ui_my_social": @YES, @"ui_my_wallet": @YES, @"ui_my_decor": @YES, @"ui_my_stats": @YES, @"ui_my_settings": @YES, @"ui_feed_taxi": @YES, @"ui_feed_group": @YES}
+    @{@"ui_tab_home": @YES, @"ui_tab_explore": @YES, @"ui_tab_voice": @YES, @"ui_tab_taxi": @YES, @"ui_tab_message": @YES, @"ui_tab_mine": @YES, @"ui_search_scan": @YES, @"ui_search_voice": @YES, @"ui_tool_drive": @YES, @"ui_tool_bus": @YES, @"ui_tool_rental": @YES, @"ui_tool_taxi": @YES, @"ui_tool_hotel": @YES, @"ui_tool_train": @YES, @"ui_tool_carpool": @YES, @"ui_tool_daijia": @YES, @"ui_tool_gas": @YES, @"ui_tool_express": @YES, @"ui_tool_more": @YES, @"ui_tool_extra_page": @YES, @"ui_home_shortcut": @YES, @"ui_map_route": @YES, @"ui_map_more": @YES, @"ui_map_layers": @YES, @"ui_map_locate": @YES, @"ui_map_attribution": @YES, @"uic_toolbox": @YES, @"uic_home_company": @YES, @"uic_searchbar": @YES, @"uic_map_widget": @YES, @"uic_tabbar": @YES, @"uic_feed_promo": @NO, @"ui_my_order_row": @YES, @"ui_my_service_row": @YES, @"ui_my_task": @YES, @"ui_my_promo_row": @YES, @"ui_my_guess": @YES, @"ui_my_social": @YES, @"ui_my_wallet": @YES, @"ui_my_decor": @YES, @"ui_my_stats": @YES, @"ui_my_settings": @YES, @"ui_feed_taxi": @YES, @"ui_feed_group": @YES}
 #endif

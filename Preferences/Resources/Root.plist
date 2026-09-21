@@ -90,7 +90,7 @@
 			<key>label</key>
 			<string>按 App 启用</string>
 			<key>footerText</key>
-			<string>按 App 单独启用 / 关闭。Bundle：高德 com.autonavi.amap、百度 com.baidu.BaiduMap、腾讯 com.tencent.map。</string>
+			<string>按 App 单独启用 / 关闭。Bundle：高德 com.autonavi.amap、百度 com.baidu.BaiduMap、腾讯 com.tencent.map。⚠️ 现状说明：百度 / 腾讯目前**只有通用层**（视图清扫 + 广告 SDK 自动拦截）生效，它们的「针对性 hook 表」还是空的（Tweak.xm installTargetedHooks 里两个空数组），而下面所有逐项界面开关（ui_* / uic_*）是**高德专用**的，对百度 / 腾讯一律不起作用。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -243,6 +243,8 @@
 			<string>语音输入（搜索栏）</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>与底部标签栏的「语音输入」共用同一文案，关掉任意一个两处都会消失。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -276,7 +278,7 @@
 			<key>default</key>
 			<true/>
 			<key>footnote</key>
-			<string>iOS 真机同时存在「公交」「实时公交」。</string>
+			<string>iOS 真机是「公交」「实时公交」，「公交地铁」是安卓别名（iOS 不命中，留着无害）。注意「实时公交」与下面「「我的」抽屉入口 (AJX)」共用文案，关掉任意一个两处都会消失。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -289,6 +291,8 @@
 			<string>租车</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>「租车」与「我的」页「车辆服务栏」共用文案，关掉任意一个两处都会消失。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -301,6 +305,8 @@
 			<string>打车</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>与底部标签栏的「打车」共用同一文案，关掉任意一个两处都会消失。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -337,18 +343,6 @@
 			<string>ui_tool_carpool</string>
 			<key>label</key>
 			<string>顺风车</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_tool_scanstreet</string>
-			<key>label</key>
-			<string>高德扫街</string>
 			<key>default</key>
 			<true/>
 		</dict>
@@ -539,6 +533,8 @@
 			<string>家 / 公司快捷条</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>⚠️ 有效性待确认：第十五轮日志里六个类名开关全关（classes=6），实际只隐藏了 4 个类，本项（GDLiteHomeCompanyView）与下面的信息流运营卡都没触发 —— 该类的视图确实在树里，但可能挂在当时没被扫到的 window 上。第十六轮已改成「扫全部 window」，等下轮日志确认。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -592,7 +588,7 @@
 			<key>default</key>
 			<false/>
 			<key>footnote</key>
-			<string>默认隐藏 WINOperationWidgetView 整块：2026-09-21 日志证实首页信息流（代驾 / 秒送 / 打车 / 美食 / 达人任务 / 优惠券 / 酒店推荐等运营促销卡）都包在这个运营卡容器里，按类名整块消失，不依赖动态文案、抗服务端轮换。**出厂即隐藏**，想恢复显示就把这一项打开。注意：若天气等真信息卡也同属该类会被一起藏，下轮日志确认后再微调。</string>
+			<string>默认隐藏 WINOperationWidgetView 整块：2026-09-21 日志证实首页信息流（代驾 / 秒送 / 打车 / 美食 / 达人任务 / 优惠券 / 酒店推荐等运营促销卡）都包在这个运营卡容器里，按类名整块消失，不依赖动态文案、抗服务端轮换。**出厂即隐藏**，想恢复显示就把这一项打开。⚠️ 有效性存疑：第十三轮日志只命中过一次且宽度仅 38（不是整张信息流卡），第十五轮日志里这个类压根没出现 —— **首页信息流的卡片并不在这个容器里**。真正的信息流容器类名还不知道，要等带 UI CHAIN 的新日志（第十六轮新增的诊断行）才能做成锚点。在此之前，要藏信息流请用下面「首页信息流运营卡」那两个文案开关。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
