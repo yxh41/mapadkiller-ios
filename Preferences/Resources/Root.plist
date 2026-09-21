@@ -396,11 +396,11 @@
 			<key>key</key>
 			<string>ui_tool_extra_page</string>
 			<key>label</key>
-			<string>扩展工具页</string>
+			<string>「我的」抽屉入口 (AJX)</string>
 			<key>default</key>
 			<true/>
 			<key>footnote</key>
-			<string>景点游玩 / 离线地图 / 通行费助手 / 收藏夹 / 旅游度假。安卓版这几项目默认隐藏，但 iOS 真机 UI TXT 里没有这些文案，所以本项在高德 iOS 上实际不生效，改成默认「显示」，避免日志里凭空多出 5 个 hidden anchors。</string>
+			<string>真机日志 2026-09-21 证实「我的」相关浮层是 AJX 自绘（AJXContainerView / WINAJXCombinedItemView），原生 UILabel 树里没有文案，只在 accessibilityLabel 上。引擎已加 AJX 行容器识别（宽度 ≤ 屏 60% 才藏，避免端掉整条抽屉）。锚点：通行费助手 / 离线地图 / 景点游玩 / 旅游度假 / 实时公交 / 领油券。关掉即隐藏这些抽屉入口。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -556,9 +556,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>高德 · 「我的」页</string>
+			<string>高德 · 「我的」页 (tab)</string>
 			<key>footerText</key>
-			<string>锚点尚未校准（需要先打开 DebugLog 翻一遍「我的」页取真机文案）。锚点为空 = 不生效，宁可不藏也不误伤。</string>
+			<string>注意：2026-09-21 日志显示「我的」相关浮层（抽屉 / 设置 / 常去地点）是 AJX 自绘，已单独挪到「「我的」抽屉入口 (AJX)」一项处理。本组是点开底部「我的」tab 后的原生页面（订单 / 车辆服务 / 达人任务 / 运营卡 / 猜你喜欢 / 资质协议），仍需真机点开该 tab 取 UI TXT 才能校准。空锚点 = 不生效，宁可不藏也不误伤。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -638,7 +638,7 @@
 			<key>label</key>
 			<string>高德 · 首页推荐信息流</string>
 			<key>footerText</key>
-			<string>锚点尚未校准，同上：空锚点 = 不生效。</string>
+			<string>锚点尚未校准：需真机把首页信息流往下滚两屏、停几秒取 UI TXT 才能回填。空锚点 = 不生效。</string>
 		</dict>
 		<dict>
 			<key>cell</key>

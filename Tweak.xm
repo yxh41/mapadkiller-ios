@@ -700,6 +700,20 @@ static UIView *makVictimContainer(UIView *start) {
         for (NSString *p in pats) {
             if ([cn containsString:p]) return cur;
         }
+        // AJX 自绘容器（高德「我的」抽屉 / 浮层）：原生 UILabel 树里没文案，
+        // 文案只在 accessibilityLabel，容器类是 AJXContainerView / AJXWINView /
+        // WINAJXCombinedItemView / WINAJXCombinedWidgetView。
+        // 只在「宽度 ≤ 屏 60%」时当成可藏「行」，避免把整条抽屉 / 整片地图浮层端掉。
+        // （真机日志 2026-09-21：这些锚点文本已通过 accessibilityLabel 命中，但旧逻辑
+        //   不认 AJXContainerView 一律 UI SKIP。加这条后门窗类锚点才能真正隐藏。）
+        if (([cn containsString:@"AJXContainerView"] ||
+             [cn containsString:@"AJXWINView"] ||
+             [cn containsString:@"WINAJXCombinedItemView"] ||
+             [cn containsString:@"WINAJXCombinedWidgetView"]) &&
+            CGRectGetWidth(cur.bounds) > 0.0 &&
+            CGRectGetWidth(cur.bounds) <= maxW) {
+            return cur;
+        }
         if ([cur isKindOfClass:[UICollectionViewCell class]]) return cur;
         if ([cur isKindOfClass:[UITableViewCell class]]) return cur;
         if ([cur isKindOfClass:[UIControl class]] &&
@@ -710,6 +724,19 @@ static UIView *makVictimContainer(UIView *start) {
         cur = cur.superview;
     }
     return nil;
+}
+
+// 诊断用：把命中视图向上 4 层的「类名(宽度)」链打出来，便于确认 AJX 行容器的真实粒度，
+// 下次日志据此决定要不要收窄 / 放宽 makVictimContainer 的 AJX 规则。
+static NSString *makChain(UIView *v) {
+    NSMutableArray<NSString *> *a = [NSMutableArray array];
+    UIView *c = v;
+    for (NSUInteger i = 0U; i < 4U && c != nil; i++) {
+        [a addObject:[NSString stringWithFormat:@"%@(%.0fw)",
+                      NSStringFromClass(c.class), (double)CGRectGetWidth(c.bounds)]];
+        c = c.superview;
+    }
+    return [a componentsJoinedByString:@" < "];
 }
 
 static void sweepUIItems(UIView *root) {
@@ -727,7 +754,7 @@ static void sweepUIItems(UIView *root) {
 
         // (1) 类名锚点：整块容器直接隐藏，优先级高于文案
         if ([gUIHiddenClasses containsObject:cn]) {
-            MAKLog(@"UI HIDE class=%@", cn);
+            MAKLog(@"UI HIDE class=%@ w=%.0f", cn, (double)CGRectGetWidth(v.bounds));
             v.hidden = YES;
             continue;
         }
@@ -737,12 +764,15 @@ static void sweepUIItems(UIView *root) {
         if (hit) {
             UIView *victim = makVictimContainer(v);
             if (victim) {
-                MAKLog(@"UI HIDE anchor=%@ victim=%@", hit, NSStringFromClass(victim.class));
+                MAKLog(@"UI HIDE anchor=%@ victim=%@ w=%.0f chain=%@",
+                       hit, NSStringFromClass(victim.class),
+                       (double)CGRectGetWidth(victim.bounds), makChain(v));
                 // 只 hidden，不 removeFromSuperview：列表 / 宫格 cell 被回收复用时，
                 // 父视图仍按数据源持有它，硬摘会引发布局错乱甚至崩溃。hidden 已足够。
                 victim.hidden = YES;
             } else {
-                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏)", hit, cn);
+                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏) chain=%@",
+                       hit, cn, makChain(v));
             }
             continue;   // 已处理，不再下钻该子树
         }
