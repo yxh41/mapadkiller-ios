@@ -31,19 +31,10 @@
     @"ui_map_locate": @[@"我的位置"],\
     @"ui_my_order_row": @[],\
     @"ui_my_service_row": @[],\
-    @"ui_my_task": @[],\
+    @"ui_my_task": @[@"立即加入", @"您将成为Lv.2级达人", @"建设高德地图需要你", @"点击查看"],\
     @"ui_my_promo_row": @[],\
     @"ui_my_guess": @[],\
-    @"ui_my_quality": @[],\
-    @"ui_feed_weather": @[],\
-    @"ui_feed_scenic": @[],\
-    @"ui_feed_posts": @[],\
-    @"ui_feed_distance": @[],\
-    @"ui_feed_rank": @[],\
-    @"ui_feed_content": @[],\
-    @"ui_feed_ai": @[],\
-    @"ui_feed_filter": @[],\
-    @"ui_home_chips": @[]}
+    @"ui_my_quality": @[]}
 #endif
 
 #ifndef MAK_UI_CLASS_ITEMS
@@ -52,5 +43,6 @@
     @"uic_home_company": @[@"GDLiteHomeCompanyView"],\
     @"uic_searchbar": @[@"WINQuickSearchBarV2"],\
     @"uic_map_widget": @[@"MapWidgetContainerView"],\
-    @"uic_tabbar": @[@"WINTabBar"]}
+    @"uic_tabbar": @[@"WINTabBar"],\
+    @"uic_feed_promo": @[@"WINOperationWidgetView"]}
 #endif

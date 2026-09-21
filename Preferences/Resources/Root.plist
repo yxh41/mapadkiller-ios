@@ -554,6 +554,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>uic_feed_promo</string>
+			<key>label</key>
+			<string>首页信息流运营卡</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>隐藏 WINOperationWidgetView 整块：2026-09-21 日志证实首页信息流（代驾 / 秒送 / 打车 / 美食 / 达人任务 / 优惠券等运营促销卡）都包在这个运营卡容器里，按类名整块消失，不依赖动态文案、抗服务端轮换。注意：若天气等真信息卡也同属该类会被一起藏，下轮日志确认后再微调。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>高德 · 「我的」页 (tab)</string>
@@ -595,6 +609,8 @@
 			<string>达人任务</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>2026-09-21 信息流抓到的运营任务卡文案：立即加入 / 您将成为Lv.2级达人 / 建设高德地图需要你 / 点击查看。覆盖「我的」页里同款入口；信息流那张卡若已用「首页信息流运营卡」整块隐藏则重复覆盖无害。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -629,122 +645,6 @@
 			<string>ui_my_quality</string>
 			<key>label</key>
 			<string>资质信息 / 协议中心</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>高德 · 首页推荐信息流</string>
-			<key>footerText</key>
-			<string>锚点尚未校准：需真机把首页信息流往下滚两屏、停几秒取 UI TXT 才能回填。空锚点 = 不生效。</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_weather</string>
-			<key>label</key>
-			<string>天气卡</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_scenic</string>
-			<key>label</key>
-			<string>周边景区</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_posts</string>
-			<key>label</key>
-			<string>榜单帖</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_distance</string>
-			<key>label</key>
-			<string>距离卡</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_rank</string>
-			<key>label</key>
-			<string>精选榜单</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_content</string>
-			<key>label</key>
-			<string>攻略内容流</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_ai</string>
-			<key>label</key>
-			<string>问问 AI</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_feed_filter</string>
-			<key>label</key>
-			<string>推荐频道栏</string>
-			<key>default</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_home_chips</string>
-			<key>label</key>
-			<string>设置家</string>
 			<key>default</key>
 			<true/>
 		</dict>
