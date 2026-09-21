@@ -29,12 +29,12 @@
     @"ui_map_more": @[@"更多"],\
     @"ui_map_layers": @[@"图层"],\
     @"ui_map_locate": @[@"我的位置"],\
-    @"ui_my_order_row": @[],\
-    @"ui_my_service_row": @[],\
-    @"ui_my_task": @[@"立即加入", @"您将成为Lv.2级达人", @"建设高德地图需要你", @"点击查看"],\
-    @"ui_my_promo_row": @[],\
-    @"ui_my_guess": @[],\
-    @"ui_my_quality": @[]}
+    @"ui_map_attribution": @[@"高德图强提供技术支持", @"协议中心-", @"-资质信息"],\
+    @"ui_my_order_row": @[@"全部订单", @"待付款", @"待使用", @"待评价", @"退款/取消"],\
+    @"ui_my_service_row": @[@"我的车辆", @"我要卖车", @"洗车", @"租车", @"加油、洗车优惠点这里", @"高德油耗"],\
+    @"ui_my_task": @[@"立即加入", @"您将成为Lv.2级达人", @"建设高德地图需要你", @"点击查看", @"达人权益中心", @"做达人，免费领大额权益", @"达人卡兑换"],\
+    @"ui_my_promo_row": @[@"蚂蚁森林", @"领勋章", @"3小时公益", @"高德公益", @"拍图有奖", @"问答有礼", @"游戏中心", @"领航员小屋", @"地图大富翁", @"长征星火", @"高德快报", @"赢奖牌", @"每日签到", @"小德果园", @"互动专区"],\
+    @"ui_my_guess": @[@"限时福利，手慢无！", @"好礼每日刷新~限量手慢无", @"邀好友天天0元领福利！", @"来！吃喝玩乐超划算~", @"0元定制足迹礼物", @"包含加油/美食/酒店专享券", @"全网比价", @"放心囤"]}
 #endif
 
 #ifndef MAK_UI_CLASS_ITEMS
@@ -49,5 +49,5 @@
 
 #ifndef MAK_UI_DEFAULTS
 #define MAK_UI_DEFAULTS \
-    @{@"ui_tab_home": @YES, @"ui_tab_explore": @YES, @"ui_tab_voice": @YES, @"ui_tab_taxi": @YES, @"ui_tab_message": @YES, @"ui_tab_mine": @YES, @"ui_search_scan": @YES, @"ui_search_voice": @YES, @"ui_tool_drive": @YES, @"ui_tool_bus": @YES, @"ui_tool_rental": @YES, @"ui_tool_taxi": @YES, @"ui_tool_hotel": @YES, @"ui_tool_train": @YES, @"ui_tool_carpool": @YES, @"ui_tool_scanstreet": @YES, @"ui_tool_daijia": @YES, @"ui_tool_gas": @YES, @"ui_tool_express": @YES, @"ui_tool_more": @YES, @"ui_tool_extra_page": @YES, @"ui_home_shortcut": @YES, @"ui_map_route": @YES, @"ui_map_more": @YES, @"ui_map_layers": @YES, @"ui_map_locate": @YES, @"uic_toolbox": @YES, @"uic_home_company": @YES, @"uic_searchbar": @YES, @"uic_map_widget": @YES, @"uic_tabbar": @YES, @"uic_feed_promo": @NO, @"ui_my_order_row": @YES, @"ui_my_service_row": @YES, @"ui_my_task": @YES, @"ui_my_promo_row": @YES, @"ui_my_guess": @YES, @"ui_my_quality": @YES}
+    @{@"ui_tab_home": @YES, @"ui_tab_explore": @YES, @"ui_tab_voice": @YES, @"ui_tab_taxi": @YES, @"ui_tab_message": @YES, @"ui_tab_mine": @YES, @"ui_search_scan": @YES, @"ui_search_voice": @YES, @"ui_tool_drive": @YES, @"ui_tool_bus": @YES, @"ui_tool_rental": @YES, @"ui_tool_taxi": @YES, @"ui_tool_hotel": @YES, @"ui_tool_train": @YES, @"ui_tool_carpool": @YES, @"ui_tool_scanstreet": @YES, @"ui_tool_daijia": @YES, @"ui_tool_gas": @YES, @"ui_tool_express": @YES, @"ui_tool_more": @YES, @"ui_tool_extra_page": @YES, @"ui_home_shortcut": @YES, @"ui_map_route": @YES, @"ui_map_more": @YES, @"ui_map_layers": @YES, @"ui_map_locate": @YES, @"ui_map_attribution": @YES, @"uic_toolbox": @YES, @"uic_home_company": @YES, @"uic_searchbar": @YES, @"uic_map_widget": @YES, @"uic_tabbar": @YES, @"uic_feed_promo": @NO, @"ui_my_order_row": @YES, @"ui_my_service_row": @YES, @"ui_my_task": @YES, @"ui_my_promo_row": @YES, @"ui_my_guess": @YES}
 #endif

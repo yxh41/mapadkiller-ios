@@ -480,6 +480,20 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>defaults</key>
+			<string>com.yxh41.mapadkiller</string>
+			<key>key</key>
+			<string>ui_map_attribution</string>
+			<key>label</key>
+			<string>地图署名 / 协议入口</string>
+			<key>default</key>
+			<true/>
+			<key>footnote</key>
+			<string>实测「高德图强提供技术支持 / 协议中心 / 资质信息」是**地图画布上的署名条**，并不在「我的」页（原先误放在「我的」页组，第十三轮日志纠正）。关掉可隐藏该署名条。注意：地图数据署名通常应当保留，按需再关。</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>高德 · 整块容器（按类名，抗文案变更）</string>
@@ -572,7 +586,7 @@
 			<key>label</key>
 			<string>高德 · 「我的」页 (tab)</string>
 			<key>footerText</key>
-			<string>注意：2026-09-21 日志显示「我的」相关浮层（抽屉 / 设置 / 常去地点）是 AJX 自绘，已单独挪到「「我的」抽屉入口 (AJX)」一项处理。本组是点开底部「我的」tab 后的原生页面（订单 / 车辆服务 / 达人任务 / 运营卡 / 猜你喜欢 / 资质协议），仍需真机点开该 tab 取 UI TXT 才能校准。空锚点 = 不生效，宁可不藏也不误伤。</string>
+			<string>2026-09-21 第十三轮日志**首次抓到本页**（靠 POLL 轮询捕获：容器是 WINRootView / AJXShadowView / AJXScrollView，确认 AJX 自绘、不走 VC 生命周期）。锚点已按真机文案校准完毕。注意：「协议中心 / 资质信息」实测是**地图署名条**、不在本页，已挪到上面「地图浮层按钮」组。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -585,6 +599,8 @@
 			<string>订单栏</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>真机文案：全部订单 / 待付款 / 待使用 / 待评价 / 退款|取消。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -597,6 +613,8 @@
 			<string>车辆服务栏</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>真机文案：我的车辆 / 我要卖车 / 洗车 / 租车 / 加油、洗车优惠点这里 / 高德油耗。车牌号（如 粤V088K7）是用户个人数据，不做锚点。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -610,7 +628,7 @@
 			<key>default</key>
 			<true/>
 			<key>footnote</key>
-			<string>2026-09-21 信息流抓到的运营任务卡文案：立即加入 / 您将成为Lv.2级达人 / 建设高德地图需要你 / 点击查看。覆盖「我的」页里同款入口；信息流那张卡若已用「首页信息流运营卡」整块隐藏则重复覆盖无害。</string>
+			<string>信息流的运营任务卡：立即加入 / 您将成为Lv.2级达人 / 建设高德地图需要你 / 点击查看；「我的」页的达人入口：达人权益中心 / 做达人，免费领大额权益 / 达人卡兑换。两组都收。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -623,6 +641,8 @@
 			<string>运营卡栏</string>
 			<key>default</key>
 			<true/>
+			<key>footnote</key>
+			<string>「我的」页里的促活 / 游戏化入口：蚂蚁森林 / 领勋章 / 拍图有奖 / 问答有礼 / 游戏中心 / 小德果园 / 每日签到 / 赢奖牌 / 互动专区 等。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -632,21 +652,11 @@
 			<key>key</key>
 			<string>ui_my_guess</string>
 			<key>label</key>
-			<string>猜你喜欢</string>
+			<string>底部活动推荐流</string>
 			<key>default</key>
 			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>defaults</key>
-			<string>com.yxh41.mapadkiller</string>
-			<key>key</key>
-			<string>ui_my_quality</string>
-			<key>label</key>
-			<string>资质信息 / 协议中心</string>
-			<key>default</key>
-			<true/>
+			<key>footnote</key>
+			<string>「我的」页底部那串活动 / 权益推荐（真机含 限时福利，手慢无！/ 0元定制足迹礼物 / 邀好友天天0元领福利！/ 来！吃喝玩乐超划算~ 等）。iOS 端并没有「猜你喜欢」这个标题，故按实际推荐流校准；具体活动名会轮换，这里只收稳定促销短语。</string>
 		</dict>
 		<dict>
 			<key>cell</key>
