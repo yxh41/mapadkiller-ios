@@ -670,9 +670,13 @@ static NSString *makMatchedAnchor(UIView *v) {
         t = [((UIButton *)v) titleForState:UIControlStateNormal];
     }
     if (t.length == 0U) {
-        // 兜底：短无障碍 label（AJX 渲染的控件常常只在 accessibilityLabel 上带文案）
+        // 兜底：无障碍 label（AJX 渲染的控件常常只在 accessibilityLabel 上带文案）
+        // 上限必须与 makSniff 的采集上限（16）一致 —— 之前这里写的是 8，
+        // 结果「加油、洗车优惠点这里」「做达人，免费领大额权益」这类长文案
+        // **能被嗅探抓到、却永远匹配不上**，用户翻了开关也毫无反应。
+        // 匹配本身是精确相等（containsObject:），放宽长度不会带来误伤。
         NSString *al = v.accessibilityLabel;
-        if (al.length > 0U && al.length <= 8U) t = al;
+        if (al.length > 0U && al.length <= 16U) t = al;
     }
     if (t.length == 0U) return nil;
     NSString *s = [t stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
@@ -704,6 +708,7 @@ static UIView *makVictimContainer(UIView *start) {
         ];
     });
     CGFloat maxW = UIScreen.mainScreen.bounds.size.width * 0.6;
+    CGFloat maxH = UIScreen.mainScreen.bounds.size.height * 0.5;   // 见下方 AJX 判据：够矮 = 列表里的整行/卡片
     UIView *cur = start;
     for (NSUInteger i = 0U; i < 8U && cur != nil; i++) {
         NSString *cn = NSStringFromClass(cur.class);
@@ -716,12 +721,17 @@ static UIView *makVictimContainer(UIView *start) {
         // 只在「宽度 ≤ 屏 60%」时当成可藏「行」，避免把整条抽屉 / 整片地图浮层端掉。
         // （真机日志 2026-09-21：这些锚点文本已通过 accessibilityLabel 命中，但旧逻辑
         //   不认 AJXContainerView 一律 UI SKIP。加这条后门窗类锚点才能真正隐藏。）
+        // 判据放宽：原来只认「宽度 ≤ 屏 60%」的窄行，但「我的」页是 AJXScrollView，
+        // 里面整行条目通常是**满宽**的，会被这条规则拒掉（表现为 UI SKIP、藏不掉）。
+        // 现在二选一：够窄（抽屉那种）**或** 够矮（列表里的整行 / 卡片），
+        // 而整页容器是满宽+满高，两头都不满足，依旧不会被端掉。
         if (([cn containsString:@"AJXContainerView"] ||
              [cn containsString:@"AJXWINView"] ||
              [cn containsString:@"WINAJXCombinedItemView"] ||
              [cn containsString:@"WINAJXCombinedWidgetView"]) &&
             CGRectGetWidth(cur.bounds) > 0.0 &&
-            CGRectGetWidth(cur.bounds) <= maxW) {
+            (CGRectGetWidth(cur.bounds) <= maxW ||
+             CGRectGetHeight(cur.bounds) <= maxH)) {
             return cur;
         }
         if ([cur isKindOfClass:[UICollectionViewCell class]]) return cur;
@@ -1160,10 +1170,15 @@ static void installTargetedHooks(NSString *bundleID) {
                     object:nil
                      queue:[NSOperationQueue mainQueue]
                 usingBlock:^(NSNotification *__unused note) {
-                    if (!gViewSweep) return;
+                    // 关键：回到前台必须重读偏好。
+                    // 偏好原本只在注入那一刻读一次，于是「设置里翻开关 → 切回高德」时
+                    // 只要 App 没被杀就完全不生效 —— 用户反馈的「怎么隐藏都没效果」正是这个。
+                    gPrefs_load();
                     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.4 * NSEC_PER_SEC)),
                                    dispatch_get_main_queue(), ^{
-                        sweepKeyWindow();
+                        if (gViewSweep) sweepKeyWindow();
+                        // Layer 4 逐项去留独立于 ViewSweep，重读后要立刻把新结果应用到界面
+                        if (gPollWindow != nil) sweepUIItems(gPollWindow);
                     });
                 }];
 
