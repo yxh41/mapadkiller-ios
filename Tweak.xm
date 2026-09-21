@@ -75,6 +75,16 @@ static BOOL gTmap       = YES;
 static NSDictionary *gUIPrefs = nil;                  // 全局 plist 里 ui_* 键值（全量保留）
 static NSSet<NSString *> *gUIHiddenAnchors = nil;     // 当前被关闭项的「中文文案锚点」集合
 static NSSet<NSString *> *gUIHiddenClasses = nil;     // 当前被关闭项的「容器类名锚点」集合
+// 已从父视图摘掉的视图会被这里**强持有**：AJX / 自绘引擎常用 unsafe 指针管理子视图，
+// 摘掉后若没人持有就会释放，引擎下次再来 setFrame: 就是 EXC_BAD_ACCESS。
+// 代价只是留住几十个隐藏视图（几 KB），换来的是绝对不会崩。
+static NSMutableSet<UIView *> *gGraveyard = nil;     // 摘掉的视图「墓地」，防悬垂
+
+// 参与匹配 / 嗅探的文案长度上限。嗅探与匹配必须**共用同一个常量** ——
+// 历史上两处各写各的（8 / 16），结果长文案「能被嗅探抓到、却永远匹配不上」，
+// 用户翻开关毫无反应，且这种 bug 在代码里看不出来。
+// 24 覆盖实测最长的「俺叫熊大，俺带你去狗熊岭瞧瞧？」这类活动推荐流文案。
+#define MAK_TXT_MAX 24U
 static void makUIRecompute(void);                     // 前向声明（定义在 Layer 4 区段）
 
 static BOOL makBool(NSDictionary *dict, NSString *key, BOOL fallback) {
@@ -671,12 +681,12 @@ static NSString *makMatchedAnchor(UIView *v) {
     }
     if (t.length == 0U) {
         // 兜底：无障碍 label（AJX 渲染的控件常常只在 accessibilityLabel 上带文案）
-        // 上限必须与 makSniff 的采集上限（16）一致 —— 之前这里写的是 8，
+        // 上限必须与 makSniff 的采集上限（MAK_TXT_MAX=24）一致 —— 历史上这里写 8，
         // 结果「加油、洗车优惠点这里」「做达人，免费领大额权益」这类长文案
         // **能被嗅探抓到、却永远匹配不上**，用户翻了开关也毫无反应。
         // 匹配本身是精确相等（containsObject:），放宽长度不会带来误伤。
         NSString *al = v.accessibilityLabel;
-        if (al.length > 0U && al.length <= 16U) t = al;
+        if (al.length > 0U && al.length <= MAK_TXT_MAX) t = al;
     }
     if (t.length == 0U) return nil;
     NSString *s = [t stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
@@ -708,55 +718,104 @@ static UIView *makVictimContainer(UIView *start) {
         ];
     });
     CGFloat maxW = UIScreen.mainScreen.bounds.size.width * 0.6;
-    CGFloat maxH = UIScreen.mainScreen.bounds.size.height * 0.5;   // 见下方 AJX 判据：够矮 = 列表里的整行/卡片
+    CGFloat maxH = UIScreen.mainScreen.bounds.size.height * 0.5;
+    //
+    // ⚠️ 真机校准（2026-09-20 第十五轮）：用户反馈「有些只隐藏了名字」。
+    //    第十三轮日志（ca451bb，我的页 POLL）给出确切证据：
+    //      UI HIDE anchor=领油券 victim=AJXContainerView w=36
+    //        chain=AJXLabel(36w) < AJXContainerView(36w) < AJXContainerView(36w) < ...
+    //      → 藏到的只是**包着文字的小容器**，图标和整条还在，用户看到的就是「名字没了」。
+    //    而「我的」页宫格的真实粒度是：
+    //      AJXContainerView(73w) < AJXContainerView(73w) < AJXContainerView(390w 整行) < …
+    //      → 若一味取最外层，关掉「我的反馈」会连同一行其它 3 个条目一起端掉，属于误伤。
+    //    所以改成**两级择优**：
+    //      · 一级：最外层「窄容器」（宽度 ≤ 屏 60%）—— 宫格里的单个条目、抽屉里的窄行，
+    //              这正是「一个完整条目」的正确粒度；
+    //      · 二级：一级找不到时，才退到最外层「矮容器」（满宽但高度 ≤ 屏高 50%）——
+    //              整行 / 卡片；
+    //      · 整页容器满宽 + 满高，两级都不满足，永远不会被端掉。
     UIView *cur = start;
+    UIView *bestNarrow = nil;   // 一级：最外层窄容器
+    UIView *bestShort = nil;    // 二级：最外层矮容器
     for (NSUInteger i = 0U; i < 8U && cur != nil; i++) {
         NSString *cn = NSStringFromClass(cur.class);
+        CGFloat w = CGRectGetWidth(cur.bounds);
+        CGFloat h = CGRectGetHeight(cur.bounds);
+
+        BOOL hitPat = NO;
         for (NSString *p in pats) {
-            if ([cn containsString:p]) return cur;
+            if ([cn containsString:p]) { hitPat = YES; break; }
         }
-        // AJX 自绘容器（高德「我的」抽屉 / 浮层）：原生 UILabel 树里没文案，
-        // 文案只在 accessibilityLabel，容器类是 AJXContainerView / AJXWINView /
-        // WINAJXCombinedItemView / WINAJXCombinedWidgetView。
-        // 只在「宽度 ≤ 屏 60%」时当成可藏「行」，避免把整条抽屉 / 整片地图浮层端掉。
-        // （真机日志 2026-09-21：这些锚点文本已通过 accessibilityLabel 命中，但旧逻辑
-        //   不认 AJXContainerView 一律 UI SKIP。加这条后门窗类锚点才能真正隐藏。）
-        // 判据放宽：原来只认「宽度 ≤ 屏 60%」的窄行，但「我的」页是 AJXScrollView，
-        // 里面整行条目通常是**满宽**的，会被这条规则拒掉（表现为 UI SKIP、藏不掉）。
-        // 现在二选一：够窄（抽屉那种）**或** 够矮（列表里的整行 / 卡片），
-        // 而整页容器是满宽+满高，两头都不满足，依旧不会被端掉。
-        if (([cn containsString:@"AJXContainerView"] ||
-             [cn containsString:@"AJXWINView"] ||
-             [cn containsString:@"WINAJXCombinedItemView"] ||
-             [cn containsString:@"WINAJXCombinedWidgetView"]) &&
-            CGRectGetWidth(cur.bounds) > 0.0 &&
-            (CGRectGetWidth(cur.bounds) <= maxW ||
-             CGRectGetHeight(cur.bounds) <= maxH)) {
-            return cur;
-        }
-        if ([cur isKindOfClass:[UICollectionViewCell class]]) return cur;
-        if ([cur isKindOfClass:[UITableViewCell class]]) return cur;
-        if ([cur isKindOfClass:[UIControl class]] &&
-            CGRectGetWidth(cur.bounds) > 0.0 &&
-            CGRectGetWidth(cur.bounds) <= maxW) {
-            return cur;
+        // AJX 自绘容器（高德「我的」页 / 抽屉 / 浮层）：文案只在 accessibilityLabel，
+        // 容器类是 AJXContainerView / AJXWINView / WINAJXCombined*。
+        BOOL hitAJX = ([cn containsString:@"AJXContainerView"] ||
+                       [cn containsString:@"AJXWINView"] ||
+                       [cn containsString:@"WINAJXCombinedItemView"] ||
+                       [cn containsString:@"WINAJXCombinedWidgetView"]);
+        BOOL isCell = ([cur isKindOfClass:[UICollectionViewCell class]] ||
+                       [cur isKindOfClass:[UITableViewCell class]]);
+        BOOL isNarrowCtrl = ([cur isKindOfClass:[UIControl class]] &&
+                             w > 0.0 && w <= maxW);
+
+        if (hitPat || hitAJX || isCell || isNarrowCtrl) {
+            if (w > 0.0 && w <= maxW) {
+                bestNarrow = cur;            // 一级命中
+            } else if (h > 0.0 && h <= maxH) {
+                bestShort = cur;             // 二级命中
+            }
         }
         cur = cur.superview;
     }
-    return nil;
+    return bestNarrow ? bestNarrow : bestShort;
 }
 
-// 诊断用：把命中视图向上 4 层的「类名(宽度)」链打出来，便于确认 AJX 行容器的真实粒度，
-// 下次日志据此决定要不要收窄 / 放宽 makVictimContainer 的 AJX 规则。
+// 诊断用：把命中视图向上 6 层的「类名(宽x高)」链打出来，便于确认 AJX 容器的真实粒度，
+// 下次日志据此校准 makVictimContainer 的两级择优阈值。
+// （原来只打 4 层且只有宽度 —— 第十三轮日志里「我的」页宫格最外层是 390w 的整行，
+//   4 层刚好卡在看不到父容器高度的地方，无法判断该藏条目还是整行。）
 static NSString *makChain(UIView *v) {
     NSMutableArray<NSString *> *a = [NSMutableArray array];
     UIView *c = v;
-    for (NSUInteger i = 0U; i < 4U && c != nil; i++) {
-        [a addObject:[NSString stringWithFormat:@"%@(%.0fw)",
-                      NSStringFromClass(c.class), (double)CGRectGetWidth(c.bounds)]];
+    for (NSUInteger i = 0U; i < 6U && c != nil; i++) {
+        CGRect b = c.bounds;
+        [a addObject:[NSString stringWithFormat:@"%@(%.0fx%.0f)",
+                      NSStringFromClass(c.class),
+                      (double)CGRectGetWidth(b), (double)CGRectGetHeight(b)]];
         c = c.superview;
     }
     return [a componentsJoinedByString:@" < "];
+}
+
+// 真正把视图「去干净」：
+//   · 单元格（UICollectionViewCell / UITableViewCell）**只 hidden** —— 会被回收复用，
+//     硬摘会引发布局错乱甚至崩溃（历史教训，别改回 remove）。
+//   · 其余视图在 hidden 之外再 removeFromSuperview —— 只 hidden 的话 Auto Layout
+//     仍按原约束给它留着位置，用户看到的就是「名字没了，占位还杵在那儿」。
+static void makHideVictim(UIView *v) {
+    if (v == nil) return;
+    v.hidden = YES;
+    // 下面这些「只 hidden、不摘」：它们是被父视图 / 数据源强持有的，硬摘会崩或错乱。
+    if ([v isKindOfClass:[UICollectionViewCell class]] ||   // 列表 / 宫格 cell：回收复用
+        [v isKindOfClass:[UITableViewCell class]] ||
+        [v isKindOfClass:[UIScrollView class]] ||           // 滚动容器（含 AJXScrollView）
+        [v isKindOfClass:[UIWindow class]] ||
+        v.superview == nil) {
+        return;
+    }
+    if (gGraveyard == nil) gGraveyard = [NSMutableSet set];
+    [gGraveyard addObject:v];        // 先留住，再摘 —— 顺序不能反
+    [v removeFromSuperview];
+}
+
+// 同一个「锚点 + 容器类」组合只打一条日志。
+// 视图现在是**真摘掉**的，AJX 每次重排都可能重建出新的实例；2 秒一轮的轮询若每次都打印，
+// 几分钟就能把日志冲到几 MB，反而看不清关键信息。首次出现打一条足够定位问题。
+static BOOL makLogOnce(NSString *key) {
+    static NSMutableSet<NSString *> *seen = nil;
+    if (seen == nil) seen = [NSMutableSet set];
+    if ([seen containsObject:key]) return NO;
+    [seen addObject:key];
+    return YES;
 }
 
 static void sweepUIItems(UIView *root) {
@@ -766,7 +825,10 @@ static void sweepUIItems(UIView *root) {
 
     NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
     NSUInteger guard = 0U;
-    while (stack.count > 0U && guard++ < 4000U) {
+    // 上限 4000 太容易截断：高德「我的」页是 AJX 自绘，光这一页的视图量就可能过千，
+    // 加上首页浮层 / 信息流，一次遍历轻松破 4000 —— 被截断的子树就等于「没隐藏」。
+    // 放宽到 30000，单次遍历仍是微秒级（只做 isa + 字符串比较，无 IO）。
+    while (stack.count > 0U && guard++ < 30000U) {
         UIView *v = stack.lastObject;
         [stack removeLastObject];
         if (v.isHidden) continue;            // 已经藏过的（上一轮补扫）直接跳过，开销可忽略
@@ -774,25 +836,31 @@ static void sweepUIItems(UIView *root) {
 
         // (1) 类名锚点：整块容器直接隐藏，优先级高于文案
         if ([gUIHiddenClasses containsObject:cn]) {
-            MAKLog(@"UI HIDE class=%@ w=%.0f", cn, (double)CGRectGetWidth(v.bounds));
-            v.hidden = YES;
+            if (makLogOnce([@"C|" stringByAppendingString:cn])) {
+                MAKLog(@"UI HIDE class=%@ w=%.0f", cn, (double)CGRectGetWidth(v.bounds));
+            }
+            makHideVictim(v);
             continue;
         }
 
-        // (2) 文案锚点：精确匹配后向上找最近的可藏容器
+        // (2) 文案锚点：精确匹配后向上找**最外层**可藏容器（藏整块，而不是只藏名字）
         NSString *hit = makMatchedAnchor(v);
         if (hit) {
             UIView *victim = makVictimContainer(v);
             if (victim) {
-                MAKLog(@"UI HIDE anchor=%@ victim=%@ w=%.0f chain=%@",
-                       hit, NSStringFromClass(victim.class),
-                       (double)CGRectGetWidth(victim.bounds), makChain(v));
-                // 只 hidden，不 removeFromSuperview：列表 / 宫格 cell 被回收复用时，
-                // 父视图仍按数据源持有它，硬摘会引发布局错乱甚至崩溃。hidden 已足够。
-                victim.hidden = YES;
+                NSString *vk = NSStringFromClass(victim.class);
+                if (makLogOnce([NSString stringWithFormat:@"T|%@|%@", hit, vk])) {
+                    MAKLog(@"UI HIDE anchor=%@ victim=%@ w=%.0f h=%.0f chain=%@",
+                           hit, vk,
+                           (double)CGRectGetWidth(victim.bounds),
+                           (double)CGRectGetHeight(victim.bounds), makChain(v));
+                }
+                makHideVictim(victim);
             } else {
-                MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏) chain=%@",
-                       hit, cn, makChain(v));
+                if (makLogOnce([NSString stringWithFormat:@"S|%@|%@", hit, cn])) {
+                    MAKLog(@"UI SKIP anchor=%@ text=%@ (未找到容器，保守不藏) chain=%@",
+                           hit, cn, makChain(v));
+                }
             }
             continue;   // 已处理，不再下钻该子树
         }
@@ -853,7 +921,7 @@ static void makSniff(UIView *root, NSString *where) {
             t = [((UIButton *)v) titleForState:UIControlStateNormal];
         }
         if (t.length == 0U) t = v.accessibilityLabel;
-        if (t.length > 0U && t.length <= 16U) {
+        if (t.length > 0U && t.length <= MAK_TXT_MAX) {
             NSString *s = [t stringByTrimmingCharactersInSet:
                            NSCharacterSet.whitespaceAndNewlineCharacterSet];
             if (s.length > 0U && ![seenText containsObject:s]) {
