@@ -902,6 +902,11 @@ static void makSniff(UIView *root, NSString *where) {
 
     NSMutableArray<NSString *> *texts  = [NSMutableArray array];
     NSMutableArray<NSString *> *clsSet = [NSMutableArray array];
+    // 第十六轮新增：光有文案还不够 —— 第十五轮日志里信息流那批文案（同城跑腿秒送达 /
+    // 取送东西选秒送 / 接车保镖 现已上线 …）反复被嗅探到，却既没命中也没 SKIP，
+    // 因为**它们所在容器的类名我们一个都不知道**，没法做成抗轮换的 uic_* 整块锚点。
+    // 所以每条新文案连它自己的 3 层视图链一起打出来，下轮日志据此直接回填类名锚点。
+    NSMutableArray<NSString *> *chains = [NSMutableArray array];
     NSMutableArray<UIView *> *stack = [NSMutableArray arrayWithObject:root];
     NSUInteger guard = 0U;
     while (stack.count > 0U && guard++ < 3000U) {
@@ -927,6 +932,19 @@ static void makSniff(UIView *root, NSString *where) {
             if (s.length > 0U && ![seenText containsObject:s]) {
                 [seenText addObject:s];
                 if (texts.count < 60U) [texts addObject:s];
+                if (chains.count < 40U) {
+                    NSMutableArray<NSString *> *cs = [NSMutableArray array];
+                    UIView *p = v;
+                    for (NSUInteger k = 0U; k < 3U && p != nil; k++) {
+                        CGRect b = p.bounds;
+                        [cs addObject:[NSString stringWithFormat:@"%@(%.0fx%.0f)",
+                                       NSStringFromClass(p.class),
+                                       (double)CGRectGetWidth(b), (double)CGRectGetHeight(b)]];
+                        p = p.superview;
+                    }
+                    [chains addObject:[NSString stringWithFormat:@"%@ @ %@", s,
+                                       [cs componentsJoinedByString:@" < "]]];
+                }
             }
         }
         for (UIView *sv in v.subviews) [stack addObject:sv];
@@ -938,6 +956,10 @@ static void makSniff(UIView *root, NSString *where) {
     if (texts.count > 0U) {
         MAKLog(@"UI TXT %@ (%lu): %@", where, (unsigned long)texts.count,
                [texts componentsJoinedByString:@" | "]);
+    }
+    if (chains.count > 0U) {
+        MAKLog(@"UI CHAIN %@ (%lu): %@", where, (unsigned long)chains.count,
+               [chains componentsJoinedByString:@"\n    "]);
     }
 }
 
@@ -960,16 +982,49 @@ static void sweepUIItemsLater(UIView *root, NSString *where) {
     }
 }
 
-// 轮询兜底用的 window：只要见过一次就记下来（didMoveToWindow / viewDidAppear 里更新）。
-static UIWindow *gPollWindow = nil;
+// 轮询兜底用的 window。
+//
+// ⚠️ 真机校准（2026-09-22 第十六轮）：原来只留**最后一个** didMoveToWindow 报上来的 window
+//    （gPollWindow），可第十五轮日志里出现了
+//      UI CLS POLL (3): UIWindow | UITransitionView | UIDropShadowView
+//    —— 一个只有 3 个类的**空壳 window**（浮层 / 弹窗容器）把主 window 顶掉了。
+//    那一轮轮询扫的就是这个空壳，等于白扫：挂在主 window 上的信息流、我的页全漏掉，
+//    而且表现为「既不 UI HIDE 也不 UI SKIP」，在日志里看不出任何异常。
+//    现在改成**记住所有见过的 window**（弱引用，window 释放后自动消失），
+//    轮询时对每一个都扫；嗅探只对面积最大的那个做，免得日志被小浮层刷爆。
+static NSHashTable<UIWindow *> *gSeenWindows = nil;
+static UIWindow *gPollWindow = nil;   // 保留给 DidBecomeActive 等处做单点补扫
+
+static void makRememberWindow(UIWindow *w) {
+    if (w == nil) return;
+    if (gSeenWindows == nil) gSeenWindows = [NSHashTable weakObjectsHashTable];
+    [gSeenWindows addObject:w];
+    gPollWindow = w;
+}
+
+// 对所有见过的 window 做一遍清扫。回前台重读偏好后也要走这条 ——
+// 只扫 gPollWindow 的话，若它恰好是那个空壳浮层 window，用户翻完开关依然「没反应」。
+static void makSweepAllWindows(BOOL withLayer1) {
+    if (gSeenWindows == nil) return;
+    for (UIWindow *w in gSeenWindows.allObjects) {   // 先快照，避免遍历中被改
+        if (![w isKindOfClass:[UIWindow class]]) continue;
+        sweepUIItems(w);                             // Layer 4 逐项去留，独立于 ViewSweep
+        if (withLayer1 && gViewSweep) sweepView(w);  // Layer 1 清扫层，受 ViewSweep 控制
+    }
+}
 
 static void makPollOnce(void) {
-    UIWindow *w = gPollWindow;
-    if (w == nil) return;
-    makSniff(w, @"POLL");       // 内部按 seenText/seenClass 全局去重，稳态不会刷屏
-    sweepUIItems(w);            // Layer 4 逐项去留：独立于 ViewSweep
-    if (!gViewSweep) return;    // Layer 1 清扫层：受 ViewSweep 控制
-    sweepView(w);
+    if (gSeenWindows == nil) return;
+    UIWindow *biggest = nil;
+    CGFloat bestArea = 0.0;
+    for (UIWindow *w in gSeenWindows.allObjects) {
+        if (![w isKindOfClass:[UIWindow class]]) continue;
+        CGRect b = w.bounds;
+        CGFloat area = CGRectGetWidth(b) * CGRectGetHeight(b);
+        if (area > bestArea) { bestArea = area; biggest = w; }
+    }
+    makSweepAllWindows(YES);
+    makSniff(biggest, @"POLL");   // 内部按 seenText/seenClass 全局去重，稳态不会刷屏
 }
 
 // 为什么需要轮询（真机第十二轮证实）：
@@ -992,7 +1047,7 @@ static void makPollSchedule(void) {
     UIViewController *vc = self;
     NSString *where = NSStringFromClass(vc.class);
     if (vc.view.window != nil) {
-        gPollWindow = vc.view.window;
+        makRememberWindow(vc.view.window);
         static dispatch_once_t pollOnce;
         dispatch_once(&pollOnce, ^{ makPollSchedule(); });
     }
@@ -1013,7 +1068,7 @@ static void makPollSchedule(void) {
     %orig;
     UIWindow *w = self.window;
     if (w == nil) return;
-    gPollWindow = w;
+    makRememberWindow(w);
     static dispatch_once_t pollOnce;
     dispatch_once(&pollOnce, ^{ makPollSchedule(); });
     static NSTimeInterval lastAt = 0.0;
@@ -1246,7 +1301,7 @@ static void installTargetedHooks(NSString *bundleID) {
                                    dispatch_get_main_queue(), ^{
                         if (gViewSweep) sweepKeyWindow();
                         // Layer 4 逐项去留独立于 ViewSweep，重读后要立刻把新结果应用到界面
-                        if (gPollWindow != nil) sweepUIItems(gPollWindow);
+                        makSweepAllWindows(NO);   // 所有 window 都扫，不能只扫 gPollWindow
                     });
                 }];
 
